@@ -91,6 +91,7 @@ fun ChatScreen(vm: ChatViewModel, onSettings: () -> Unit, onCustom: () -> Unit, 
             if (onLive != null) IconButton(onLive) { Icon(Icons.Default.GraphicEq, t("Live με φωνή", "Live voice"), tint = accent) }
             IconButton(onSettings) { Icon(Icons.Default.Settings, t("Ρυθμίσεις", "Settings"), tint = C.muted) }
         }
+        UpdateBanner(vm)
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
             Orb(accent, if (messages.isEmpty()) 190.dp else 96.dp, active = sending || messages.isEmpty())
             Row(

@@ -159,6 +159,24 @@ fun SettingsScreen(vm: ChatViewModel, onBack: () -> Unit, onKey: () -> Unit, onC
             TextButton({ confirm = true }) { Text(t("Σβήσε όλες τις κουβέντες", "Delete all conversations"), color = C.danger) }
         }
         Panel {
+            Label(t("ΝΕΑ ΕΚΔΟΣΗ", "NEW VERSION"))
+            var on by remember { mutableStateOf(vm.settings.checkUpdates) }
+            val checking by vm.checking.collectAsState()
+            val upd by vm.update.collectAsState()
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(t("Ειδοποίηση όταν βγαίνει νέα έκδοση", "Tell me when a new version is out"), modifier = Modifier.weight(1f), fontSize = 14.sp)
+                androidx.compose.material3.Switch(on, { on = it; vm.settings.checkUpdates = it })
+            }
+            Text(t("Η εφαρμογή ρωτά το GitHub, το πολύ κάθε 6 ώρες, ποια είναι η τελευταία έκδοση. Δεν στέλνεται τίποτα δικό σου.", "The app asks GitHub, at most every 6 hours, which is the latest version. Nothing of yours is sent."), color = C.dim, fontSize = 12.sp)
+            TextButton({ vm.checkUpdate(now = true) }, enabled = !checking) { Text(if (checking) t("Ελέγχω…", "Checking…") else t("Έλεγχος τώρα", "Check now"), color = accent) }
+            val last = vm.settings.lastUpdateCheck
+            if (!checking && last > 0) Text(
+                upd?.let { t("Υπάρχει η ${it.version}: πάτα «Κατέβασμα» στην αρχική.", "${it.version} is out: press “Download” on the home screen.") }
+                    ?: t("Έχεις την τελευταία έκδοση (${BuildConfig.VERSION_NAME}).", "You have the latest version (${BuildConfig.VERSION_NAME})."),
+                color = C.muted, fontSize = 12.5.sp,
+            )
+        }
+        Panel {
             Label(t("ΣΧΕΤΙΚΑ", "ABOUT"))
             Text("Binelik AI ${BuildConfig.VERSION_NAME}", fontWeight = FontWeight.Bold)
             Text(t("Δημιουργός: jemangr · Ανοιχτός κώδικας, MIT license", "Made by jemangr · Open source, MIT license"), color = C.muted, fontSize = 13.sp)
@@ -252,7 +270,8 @@ object Privacy {
         t("Τι στέλνεται και πού", "What is sent, and where") to t("Ό,τι γράφεις στέλνεται απευθείας από το κινητό σου στην υπηρεσία AI που διάλεξες, με το δικό σου κλειδί, και εκεί ισχύει η δική της πολιτική:\n• Google Gemini: με δωρεάν κλειδί, η Google μπορεί να χρησιμοποιεί τις κουβέντες για να βελτιώνει τα προϊόντα της και μπορεί να τις διαβάσουν άνθρωποι· με billing, όχι.\n• DeepSeek: οι κουβέντες πάνε στους servers του, στην Κίνα.", "What you write is sent straight from your phone to the AI service you chose, with your own key, and its own policy applies there:\n• Google Gemini: with a free key, Google may use the conversations to improve its products and people may read them; with billing, not.\n• DeepSeek: the conversations go to its servers, in China."),
         t("Ο έλεγχος ασφάλειας", "The safety check") to t("Ο έλεγχος για αυτοκτονία και για πραγματική πρόθεση βίας γίνεται στο κινητό σου και δεν στέλνεται πουθενά. Όταν πιάνει κάτι, το μήνυμα δεν πηγαίνει στο AI.", "The check for suicide and for real intent of violence runs on your phone and isn't sent anywhere. When it catches something, the message doesn't go to the AI."),
         t("Φωνή και μικρόφωνο", "Voice and microphone") to t("Το μικρόφωνο ζητιέται μόνο όταν πατήσεις Play. Με το Gemini, η φωνή σου στέλνεται ζωντανά μόνο στο Google Gemini, με το δικό σου κλειδί. Με το DeepSeek, τη φωνή σου την ακούει η αναγνώριση ομιλίας του κινητού σου (συνήθως της Google) και στο DeepSeek πηγαίνει μόνο το κείμενο. Ήχος δεν γράφεται πουθενά· κρατιέται μόνο το κείμενο της κουβέντας. Όσο μιλάτε, μια ειδοποίηση δείχνει ότι το μικρόφωνο είναι ανοιχτό, με κουμπί Παύση.", "The microphone is asked for only when you press Play. With Gemini, your voice is streamed only to Google Gemini, with your own key. With DeepSeek, your phone's speech recognition (usually Google's) hears your voice and only the text goes to DeepSeek. No audio is recorded anywhere; only the text of the conversation is kept. While you talk, a notification shows the microphone is on, with a Pause button."),
-        t("Άδειες", "Permissions") to t("Internet (για το AI), μικρόφωνο (μόνο για τη φωνή) και ειδοποιήσεις (για το κουμπί Παύση). Τίποτα άλλο: ούτε επαφές, ούτε τοποθεσία, ούτε αρχεία.", "Internet (for the AI), microphone (only for voice) and notifications (for the Pause button). Nothing else: no contacts, no location, no files."),
+        t("Έλεγχος για νέα έκδοση", "New version check") to t("Αν το αφήσεις ανοιχτό (Ρυθμίσεις), η εφαρμογή ρωτά το GitHub, το πολύ κάθε 6 ώρες, ποια είναι η τελευταία έκδοση. Το GitHub βλέπει μόνο ότι έγινε ένα αίτημα (και τη διεύθυνση IP, όπως κάθε site). Τίποτα από τις κουβέντες ή το κλειδί σου.", "If you leave it on (Settings), the app asks GitHub, at most every 6 hours, which is the latest version. GitHub sees only that a request was made (and the IP address, like any site). Nothing of your conversations or key."),
+        t("Άδειες", "Permissions") to t("Internet (για το AI και τον έλεγχο νέας έκδοσης), μικρόφωνο (μόνο για τη φωνή) και ειδοποιήσεις (για το κουμπί Παύση). Τίποτα άλλο: ούτε επαφές, ούτε τοποθεσία, ούτε αρχεία.", "Internet (for the AI and the new version check), microphone (only for voice) and notifications (for the Pause button). Nothing else: no contacts, no location, no files."),
         t("18+ και όχι ψυχοθεραπεία", "18+ and not therapy") to t("Είναι για ενήλικες. Δεν είναι ψυχοθεραπεία ούτε ιατρική συμβουλή. Αν χρειάζεσαι βοήθεια: 1018 (24ωρη γραμμή για την αυτοκτονία) ή 112.", "It's for adults. It isn't therapy or medical advice. If you need help: 112, or your local crisis line (in Greece 1018, 24 hours)."),
         t("Ανοιχτός κώδικας", "Open source") to t("Ο κώδικας είναι δημόσιος (MIT license) στο github.com/jemangr/Binelik-AI: μπορεί ο καθένας να ελέγξει όλα τα παραπάνω. Για ερωτήσεις, άνοιξε ένα issue εκεί.", "The code is public (MIT license) at github.com/jemangr/Binelik-AI: anyone can check all of the above. For questions, open an issue there."),
     )

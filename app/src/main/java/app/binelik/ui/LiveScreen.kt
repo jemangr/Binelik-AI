@@ -122,6 +122,7 @@ fun LiveScreen(vm: ChatViewModel, onChat: () -> Unit, onSettings: () -> Unit, on
             IconButton(onChat) { Icon(Icons.AutoMirrored.Filled.Chat, t("Κουβέντα με κείμενο", "Text chat"), tint = C.muted) }
             IconButton(onSettings) { Icon(Icons.Default.Settings, t("Ρυθμίσεις", "Settings"), tint = C.muted) }
         }
+        UpdateBanner(vm)
         Hud((if (vm.settings.provider == app.binelik.ai.Provider.GEMINI) "GEMINI LIVE · " else "DEEPSEEK · ") + hud, Modifier.align(Alignment.CenterHorizontally).padding(top = 4.dp).semantics { liveRegion = LiveRegionMode.Polite })
         Box(Modifier.fillMaxWidth().padding(top = 6.dp), contentAlignment = Alignment.Center) {
             Orb(accent, 250.dp, active = on && !(state == LiveState.LISTENING && mic))

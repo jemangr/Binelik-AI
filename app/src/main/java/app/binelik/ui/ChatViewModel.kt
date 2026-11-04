@@ -3,6 +3,7 @@ package app.binelik.ui
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import app.binelik.BuildConfig
 import app.binelik.ai.Ai
 import app.binelik.ai.AiResult
 import app.binelik.ai.Provider
@@ -16,6 +17,7 @@ import app.binelik.data.Prompts
 import app.binelik.i18n.t
 import app.binelik.safety.Safety
 import app.binelik.safety.SafetyHit
+import app.binelik.update.Updates
 import app.binelik.voice.Engine
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -68,6 +70,25 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
 
     /** After the custom character, the team, the voice or the language change in the settings. */
     fun refresh() { character.value = settings.character(); Engine.changed() }
+
+    // ---- New version on GitHub ----
+
+    val update = MutableStateFlow<Updates.Release?>(null)
+    val checking = MutableStateFlow(false)
+
+    /** At start: if allowed and not checked for a few hours. [now] from the settings button. */
+    fun checkUpdate(now: Boolean = false) {
+        if (!now && (!settings.checkUpdates || System.currentTimeMillis() - settings.lastUpdateCheck < Updates.EVERY_MS)) return
+        checking.value = true
+        viewModelScope.launch {
+            val r = Updates.check(BuildConfig.VERSION_NAME)
+            settings.lastUpdateCheck = System.currentTimeMillis()
+            update.value = r?.takeIf { now || it.version != settings.skippedVersion }
+            checking.value = false
+        }
+    }
+
+    fun later() { update.value?.let { settings.skippedVersion = it.version }; update.value = null }
 
     fun canVoice() = Engine.canVoice()
     fun play() = Engine.play()

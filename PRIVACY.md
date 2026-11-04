@@ -27,8 +27,11 @@
 
 Ήχος δεν γράφεται πουθενά: κρατιέται μόνο το κείμενο της κουβέντας. Όσο μιλάτε, και με σβηστή οθόνη ή στο Android Auto, μια ειδοποίηση δείχνει ότι το μικρόφωνο είναι ανοιχτό, με κουμπί **Παύση**.
 
+## Έλεγχος για νέα έκδοση
+Αν το αφήσεις ανοιχτό (Ρυθμίσεις → Νέα έκδοση, ανοιχτό από την αρχή), η εφαρμογή ρωτά το GitHub, το πολύ κάθε 6 ώρες, ποια είναι η τελευταία έκδοση (`api.github.com`). Το GitHub βλέπει μόνο ότι έγινε ένα αίτημα, και τη διεύθυνση IP όπως κάθε site. Τίποτα από τις κουβέντες ή το κλειδί σου. Το APK το κατεβάζεις εσύ, από τον browser.
+
 ## Άδειες
-**Internet** (για το AI), **μικρόφωνο** (μόνο για τη φωνή) και **ειδοποιήσεις** (για το κουμπί Παύση). Τίποτα άλλο: ούτε επαφές, ούτε τοποθεσία, ούτε αρχεία.
+**Internet** (για το AI και τον έλεγχο νέας έκδοσης), **μικρόφωνο** (μόνο για τη φωνή) και **ειδοποιήσεις** (για το κουμπί Παύση). Τίποτα άλλο: ούτε επαφές, ούτε τοποθεσία, ούτε αρχεία.
 
 ## 18+ και όχι ψυχοθεραπεία
 Είναι για ενήλικες. Δεν είναι ψυχοθεραπεία ούτε ιατρική συμβουλή. Αν χρειάζεσαι βοήθεια: **1018** (24ωρη γραμμή για την αυτοκτονία) ή **112**.
@@ -39,4 +42,4 @@
 ---
 
 ### English summary
-Binelik AI has no server and keeps nothing: no account, ads, analytics or trackers. Conversations (text only, never audio) stay on your phone and are excluded from Android backups; the key is encrypted with the Android Keystore. What you say goes straight from your phone to the AI you chose (Google Gemini, or DeepSeek in China) with your own key, under their policies; with a free Gemini key Google may use conversations to improve its products. With DeepSeek, your phone's speech recognition hears your voice and only text goes to DeepSeek. The safety check runs on the phone. Permissions: internet, microphone (only for voice), notifications (the Pause button). 18+, not therapy.
+Binelik AI has no server and keeps nothing: no account, ads, analytics or trackers. Conversations (text only, never audio) stay on your phone and are excluded from Android backups; the key is encrypted with the Android Keystore. What you say goes straight from your phone to the AI you chose (Google Gemini, or DeepSeek in China) with your own key, under their policies; with a free Gemini key Google may use conversations to improve its products. With DeepSeek, your phone's speech recognition hears your voice and only text goes to DeepSeek. The safety check runs on the phone. If left on, the app asks GitHub at most every 6 hours for the latest version (nothing of yours is sent). Permissions: internet, microphone (only for voice), notifications (the Pause button). 18+, not therapy.

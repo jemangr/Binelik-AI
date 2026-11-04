@@ -93,6 +93,18 @@ class Settings(context: Context) {
         get() = p.getString("team", null) ?: Characters.teams.first().el
         set(v) = p.edit().putString("team", v.trim().take(40)).apply()
 
+    /** Look on GitHub for a newer version (on by default). */
+    var checkUpdates: Boolean
+        get() = p.getBoolean("upd", true)
+        set(v) = p.edit().putBoolean("upd", v).apply()
+    var lastUpdateCheck: Long
+        get() = p.getLong("upd_at", 0)
+        set(v) = p.edit().putLong("upd_at", v).apply()
+    /** A version the user said «later» to: not shown again until a newer one. */
+    var skippedVersion: String
+        get() = p.getString("upd_skip", null) ?: ""
+        set(v) = p.edit().putString("upd_skip", v).apply()
+
     /** English instead of Greek (screens and characters); first time, the phone's language decides. */
     var english: Boolean
         get() = p.getBoolean("en", java.util.Locale.getDefault().language != "el")

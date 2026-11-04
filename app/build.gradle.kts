@@ -17,8 +17,8 @@ android {
         applicationId = "app.binelik"
         minSdk = 29
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.0.0"
+        versionCode = 4
+        versionName = "1.1.0"
     }
 
     // The release key comes from keystore.properties (git-ignored, written by CI from the repository's
