@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -67,7 +68,7 @@ private val blue = Color(0xFF4DA3FF)
 @Composable
 fun Onboarding(vm: ChatViewModel, onDone: () -> Unit) {
     var step by remember { mutableStateOf(if (vm.settings.adult) 2 else 1) }
-    Column(Modifier.fillMaxSize().background(C.bg).systemBarsPadding().padding(horizontal = 20.dp)) {
+    Column(Modifier.fillMaxSize().background(C.bg).systemBarsPadding().imePadding().padding(horizontal = 20.dp)) {
         Row(Modifier.fillMaxWidth().padding(vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
             Logo(30.dp); Spacer(Modifier.width(8.dp))
             Text("Binelik AI", fontWeight = FontWeight.ExtraBold, fontSize = 17.sp)
