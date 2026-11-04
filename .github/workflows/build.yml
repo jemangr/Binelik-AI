@@ -23,3 +23,5 @@ jobs:
         with:
           name: BinelikAI-apk
           path: app/build/outputs/apk/release/app-release.apk
+          # The APKs live in the releases; this one is only for checking a pull request.
+          retention-days: 3
