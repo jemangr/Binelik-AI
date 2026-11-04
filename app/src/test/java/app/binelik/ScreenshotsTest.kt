@@ -22,6 +22,7 @@ import app.binelik.ui.CharacterList
 import app.binelik.ui.ChatScreen
 import app.binelik.ui.ChatViewModel
 import app.binelik.ui.KeyStep
+import app.binelik.ui.LiveScreen
 import app.binelik.ui.Onboarding
 import app.binelik.ui.PrivacyScreen
 import app.binelik.ui.SafetyDialog
@@ -88,6 +89,12 @@ class ScreenshotsTest {
 
     @Test fun s6_safety() = shot("6-safety") {
         Column(Modifier.fillMaxSize().background(C.bg)) { SafetyDialog {} }
+    }
+
+    @Test fun s0_live() {
+        val vm = ChatViewModel(app)
+        vm.pick(Characters.byId("gynaika")!!)
+        shot("0-live") { LiveScreen(vm, {}, {}, {}) }
     }
 
     @Test fun s7_privacy() = shot("7-privacy") { PrivacyScreen {} }

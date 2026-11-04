@@ -7,7 +7,7 @@
 Android · ανοιχτός κώδικας (MIT) · δικό σου κλειδί Gemini ή DeepSeek · χωρίς server · 18+</p>
 
 <p align="center">
-<img src="docs/screenshots/5-start.png" width="200" alt="Η αρχική με τον Καβγατζή">
+<img src="docs/screenshots/0-live.png" width="200" alt="Το Live με τη Γυναίκα σου">
 <img src="docs/screenshots/3-chat.png" width="200" alt="Κουβέντα με τον Κολλητό">
 <img src="docs/screenshots/4-characters.png" width="200" alt="Η λίστα των χαρακτήρων">
 <img src="docs/screenshots/2-key.png" width="200" alt="Το κλειδί σε δύο βήματα">
@@ -48,7 +48,7 @@ Android · ανοιχτός κώδικας (MIT) · δικό σου κλειδί
 2. Άνοιξέ το και δήλωσε ότι είσαι 18+.
 3. Διάλεξε **Gemini (δωρεάν)** και πάτα **«Άνοιγμα Google AI Studio»**.
 4. Εκεί πάτα **Create API key**, μετά **Copy**, και γύρνα στην εφαρμογή. Το κλειδί μπαίνει μόνο του και δοκιμάζεται.
-5. Διάλεξε χαρακτήρα και ξέσπα.
+5. Διάλεξε χαρακτήρα, πάτα **Play** και μίλα του. Ή πάτα το εικονίδιο της κουβέντας για να γράψεις.
 
 Το **Gemini** έχει δωρεάν κλειδί, με ημερήσια όρια. Το **DeepSeek** θέλει μικρό υπόλοιπο, π.χ. 2 $. Αναλυτικές οδηγίες υπάρχουν και μέσα στην εφαρμογή, στο «Περισσότερες πληροφορίες».
 
@@ -76,8 +76,8 @@ Android · ανοιχτός κώδικας (MIT) · δικό σου κλειδί
 
 | Έκδοση | Τι |
 |---|---|
-| **0.1** (τώρα) | Κουβέντα με κείμενο, όλοι οι χαρακτήρες, ένταση, Gemini και DeepSeek |
-| 0.2 | **Live** με φωνή (Gemini): φωνή ανά χαρακτήρα, ανδρική ή γυναικεία, Pause/Play, δύο Mute |
+| **0.1** | Κουβέντα με κείμενο, όλοι οι χαρακτήρες, ένταση, Gemini και DeepSeek |
+| **0.2** (τώρα) | **Live** με φωνή (Gemini): φωνή ανά χαρακτήρα, ανδρική ή γυναικεία, Pause/Play, δύο Mute, αλλαγή χαρακτήρα την ώρα που μιλάς |
 | 0.3 | Φωνή και με το DeepSeek (από το κινητό) |
 | 0.4 | Android Auto (με «άγνωστες πηγές») |
 | 1.0 | Αγγλικά |
@@ -103,6 +103,7 @@ Kotlin, Jetpack Compose, Room, OkHttp. Android 10 και μετά.
 
 **Vent at an AI character.** Binelik AI is an open-source Android app (in Greek for now) where you rant and swear at a character, and it answers in its own way: it fights back, agrees with you, listens patiently, or plays devil's advocate. There are 13 characters plus your own, each with three intensity levels.
 
+- **Live voice:** talk to the character with Gemini Live, each with its own male or female voice; Pause/Play and two separate mutes (your microphone, its voice).
 - **Bring your own key:** Gemini (free key) or DeepSeek. The app opens the key page, and when you copy the key it is picked up automatically.
 - **Nothing kept:** no server, no account, no analytics. Conversations stay on your phone and are excluded from Android backups. The key is encrypted with the Android Keystore.
 - **Safety:** mentions of suicide or self-harm, and real intent of violence, stop the character at once and show help numbers. The check runs on the phone before anything reaches the AI.

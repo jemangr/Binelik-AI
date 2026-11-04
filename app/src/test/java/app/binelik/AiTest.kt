@@ -58,3 +58,53 @@ class AiTest {
         assertEquals(Reason.OTHER, Ai.reasonFor(500))
     }
 }
+
+class LiveTest {
+    private val json = kotlinx.serialization.json.Json
+
+    @Test fun setupHasVoiceLanguageAndTranscriptions() {
+        val s = json.parseToJsonElement(app.binelik.ai.LiveProtocol.setup("m", "sys", app.binelik.ai.LiveProtocol.Options("Kore", "el-GR", null))).jsonObject["setup"]!!.jsonObject
+        assertEquals("models/m", s["model"]!!.jsonPrimitive.content)
+        val g = s["generationConfig"]!!.jsonObject
+        assertEquals("AUDIO", g["responseModalities"]!!.jsonArray[0].jsonPrimitive.content)
+        val speech = g["speechConfig"]!!.jsonObject
+        assertEquals("el-GR", speech["languageCode"]!!.jsonPrimitive.content)
+        assertEquals("Kore", speech["voiceConfig"]!!.jsonObject["prebuiltVoiceConfig"]!!.jsonObject["voiceName"]!!.jsonPrimitive.content)
+        org.junit.Assert.assertTrue("inputAudioTranscription" in s && "outputAudioTranscription" in s)
+        assertEquals("sys", s["systemInstruction"]!!.jsonObject["parts"]!!.jsonArray[0].jsonObject["text"]!!.jsonPrimitive.content)
+    }
+
+    @Test fun retryDropsWhatTheModelRefuses() {
+        val o = app.binelik.ai.LiveProtocol.Options("Kore", "el-GR", null)
+        assertEquals(o.copy(language = null), app.binelik.ai.LiveProtocol.retry("Invalid language code", o))
+        assertEquals(o.copy(voice = null), app.binelik.ai.LiveProtocol.retry("voice not found", o))
+        assertEquals(o.copy(thinking = "low"), app.binelik.ai.LiveProtocol.retry("thinking level required", o))
+        assertNull(app.binelik.ai.LiveProtocol.retry("API key not valid", o))
+    }
+
+    @Test fun readsServerMessages() {
+        val audio = java.util.Base64.getEncoder().encodeToString(byteArrayOf(1, 2, 3))
+        val ev = app.binelik.ai.LiveProtocol.parse("""{"serverContent":{"modelTurn":{"parts":[{"inlineData":{"mimeType":"audio/pcm;rate=24000","data":"$audio"}}]},"outputTranscription":{"text":"Έλα"},"turnComplete":true}}""")
+        assertEquals(3, (ev[0] as app.binelik.ai.LiveEvent.Audio).pcm.size)
+        assertEquals(app.binelik.ai.LiveEvent.Said("Έλα"), ev[1])
+        assertEquals(app.binelik.ai.LiveEvent.TurnComplete, ev[2])
+        assertEquals(listOf(app.binelik.ai.LiveEvent.Ready), app.binelik.ai.LiveProtocol.parse("""{"setupComplete":{}}"""))
+        assertEquals(listOf(app.binelik.ai.LiveEvent.Heard("γεια"), app.binelik.ai.LiveEvent.Interrupted), app.binelik.ai.LiveProtocol.parse("""{"serverContent":{"inputTranscription":{"text":"γεια"},"interrupted":true}}"""))
+    }
+
+    @Test fun eachCharacterHasAVoiceOfItsGender() {
+        app.binelik.data.Characters.all.forEach { c ->
+            val v = app.binelik.ai.LiveProtocol.voiceFor(c, c.gender, null)
+            org.junit.Assert.assertTrue(c.id, v in app.binelik.ai.LiveProtocol.voices(c.gender))
+            assertEquals("Leda", app.binelik.ai.LiveProtocol.voiceFor(c, app.binelik.data.Gender.FEMALE, 2))
+        }
+    }
+
+    @Test fun livePromptAsksForTheSpokenPauseAndKeepsTheConversation() {
+        val c = app.binelik.data.Characters.all.first()
+        val p = app.binelik.data.Prompts.live(c, app.binelik.data.Intensity.MEDIUM, "ΑΕΚ", listOf(true to "ρε μαλάκα", false to "εμένα;"))
+        org.junit.Assert.assertTrue(p.contains(app.binelik.data.Prompts.LIVE_PAUSE))
+        org.junit.Assert.assertFalse(p.contains("ξεκίνα την απάντηση με ${app.binelik.data.Prompts.PAUSE}"))
+        org.junit.Assert.assertTrue(p.contains("Χρήστης: ρε μαλάκα"))
+    }
+}

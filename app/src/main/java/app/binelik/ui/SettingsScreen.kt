@@ -101,7 +101,23 @@ fun SettingsScreen(vm: ChatViewModel, onBack: () -> Unit, onKey: () -> Unit, onC
             Segmented(listOf(Gender.MALE, Gender.FEMALE), gender, { if (it == Gender.MALE) "Ανδρική" else "Γυναικεία" }, accent, {
                 gender = it; vm.settings.setGender(c.id, it)
             })
-            Text("Η φωνή ακούγεται από την έκδοση 0.2 (Live).", color = C.dim, fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
+            var vi by remember(c.id, gender) { mutableStateOf(vm.settings.voiceIndex(c.id)) }
+            val names = app.binelik.ai.LiveProtocol.voices(gender)
+            val current = app.binelik.ai.LiveProtocol.voiceFor(c, gender, vi)
+            Spacer(Modifier.height(10.dp))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                names.forEachIndexed { i, n ->
+                    val on = n == current
+                    Text(
+                        "Φωνή ${i + 1}", color = if (on) accent else C.text, fontFamily = FontFamily.Monospace, fontSize = 12.sp,
+                        modifier = Modifier.clip(RoundedCornerShape(10.dp)).background(C.panel2)
+                            .border(1.dp, if (on) accent else C.line, RoundedCornerShape(10.dp))
+                            .clickable(role = Role.RadioButton) { vi = i; vm.settings.setVoiceIndex(c.id, i) }
+                            .semantics { selected = on }.padding(horizontal = 10.dp, vertical = 7.dp),
+                    )
+                }
+            }
+            Text("Τη φωνή την ακούς στο Live (Gemini). Η αλλαγή ισχύει από το επόμενο Play.", color = C.dim, fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
         }
         Panel {
             Label("ΟΠΑΔΟΣ: Η ΟΜΑΔΑ ΤΟΥ")
@@ -226,7 +242,8 @@ object Privacy {
         "Το κλειδί σου" to "Μένει κρυπτογραφημένο στο κινητό σου (Android Keystore) και στέλνεται μόνο στην υπηρεσία που ανήκει.",
         "Τι στέλνεται και πού" to "Ό,τι γράφεις στέλνεται απευθείας από το κινητό σου στην υπηρεσία AI που διάλεξες, με το δικό σου κλειδί, και εκεί ισχύει η δική της πολιτική:\n• Google Gemini: με δωρεάν κλειδί, η Google μπορεί να χρησιμοποιεί τις κουβέντες για να βελτιώνει τα προϊόντα της και μπορεί να τις διαβάσουν άνθρωποι· με billing, όχι.\n• DeepSeek: οι κουβέντες πάνε στους servers του, στην Κίνα.",
         "Ο έλεγχος ασφάλειας" to "Ο έλεγχος για αυτοκτονία και για πραγματική πρόθεση βίας γίνεται στο κινητό σου και δεν στέλνεται πουθενά. Όταν πιάνει κάτι, το μήνυμα δεν πηγαίνει στο AI.",
-        "Άδειες" to "Η εφαρμογή χρειάζεται μόνο internet, για να μιλά με το AI. Το μικρόφωνο θα ζητηθεί μόνο για το Live (από την έκδοση 0.2).",
+        "Φωνή και μικρόφωνο" to "Το μικρόφωνο ζητιέται μόνο όταν πατήσεις Play στο Live. Η φωνή σου στέλνεται ζωντανά μόνο στο Google Gemini, με το δικό σου κλειδί, και δεν γράφεται πουθενά στο κινητό· κρατιέται μόνο το κείμενο της κουβέντας. Όταν η εφαρμογή φύγει από την οθόνη, το Live σταματά και το μικρόφωνο κλείνει.",
+        "Άδειες" to "Internet (για το AI) και μικρόφωνο (μόνο για το Live). Τίποτα άλλο: ούτε επαφές, ούτε τοποθεσία, ούτε αρχεία.",
         "18+ και όχι ψυχοθεραπεία" to "Είναι για ενήλικες. Δεν είναι ψυχοθεραπεία ούτε ιατρική συμβουλή. Αν χρειάζεσαι βοήθεια: 1018 (24ωρη γραμμή για την αυτοκτονία) ή 112.",
         "Ανοιχτός κώδικας" to "Ο κώδικας είναι δημόσιος (MIT license) στο github.com/jemangr/Binelik-AI: μπορεί ο καθένας να ελέγξει όλα τα παραπάνω. Για ερωτήσεις, άνοιξε ένα issue εκεί.",
     )

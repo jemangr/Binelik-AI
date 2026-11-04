@@ -7,6 +7,9 @@ import app.binelik.ai.Ai
 import app.binelik.ai.AiResult
 import app.binelik.ai.Provider
 import app.binelik.ai.Reason
+import app.binelik.ai.LiveEvent
+import app.binelik.ai.LiveProtocol
+import app.binelik.ai.LiveSession
 import app.binelik.ai.Turn
 import app.binelik.data.Character
 import app.binelik.data.Db
@@ -24,6 +27,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+
+enum class LiveState { OFF, CONNECTING, LISTENING, SPEAKING, ERROR }
 
 class ChatViewModel(app: Application) : AndroidViewModel(app) {
     val settings = Settings(app)
@@ -43,16 +48,123 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     fun pick(c: Character) {
+        val wasLive = liveOn
+        if (wasLive) stopLive()
         settings.characterId = c.id
         character.value = c
         intensity.value = settings.intensity(c.id)
         error.value = null
+        if (wasLive) play()
     }
 
     fun setIntensity(i: Intensity) {
         settings.setIntensity(character.value.id, i)
         intensity.value = i
+        if (liveOn) { stopLive(); play() }
     }
+
+    // ---- Live (Gemini only) ----
+
+    val live = MutableStateFlow(LiveState.OFF)
+    val micMuted = MutableStateFlow(false)
+    val voiceMuted = MutableStateFlow(false)
+    val liveError = MutableStateFlow<String?>(null)
+    /** The lines of the turn in progress, shown under the circle. */
+    val heardLine = MutableStateFlow("")
+    val saidLine = MutableStateFlow("")
+    private var session: LiveSession? = null
+    private val liveOn get() = session != null
+
+    fun canLive() = settings.provider == Provider.GEMINI && keys.has(Provider.GEMINI)
+
+    fun play() {
+        if (session != null) return
+        val key = keys.get(Provider.GEMINI) ?: run { liveError.value = "Το Live θέλει κλειδί Gemini. Βάλ' το από τις Ρυθμίσεις."; live.value = LiveState.ERROR; return }
+        val c = character.value
+        val g = settings.gender(c)
+        val recent = messages.value.filter { !it.pause }.map { it.fromUser to it.text }
+        val system = Prompts.live(c, intensity.value, settings.team, recent)
+        liveError.value = null
+        live.value = LiveState.CONNECTING
+        session = LiveSession(key, viewModelScope, ::onLive, ::onLiveClosed).also {
+            it.micMuted = micMuted.value
+            it.voiceMuted = voiceMuted.value
+            it.start(system, LiveProtocol.Options(LiveProtocol.voiceFor(c, g, settings.voiceIndex(c.id)), "el-GR", null))
+        }
+    }
+
+    /** Pause: the conversation stops and the microphone closes. */
+    fun stopLive() {
+        saveTurn()
+        session?.let { session = null; it.stop() }
+        live.value = LiveState.OFF
+    }
+
+    fun toggleMic() { micMuted.value = !micMuted.value; session?.micMuted = micMuted.value }
+    fun toggleVoice() { voiceMuted.value = !voiceMuted.value; session?.voiceMuted = voiceMuted.value }
+
+    private val heard = StringBuilder()
+    private val said = StringBuilder()
+
+    private fun onLive(e: LiveEvent) {
+        when (e) {
+            LiveEvent.Ready -> live.value = LiveState.LISTENING
+            is LiveEvent.Heard -> {
+                synchronized(heard) { heard.append(e.text) }
+                heardLine.value = heard.toString().trim()
+                if (live.value != LiveState.SPEAKING) live.value = LiveState.LISTENING
+                // The phone's own check, on what the user said.
+                if (Safety.check(heard.toString()) != SafetyHit.NONE) safetyStop()
+            }
+            is LiveEvent.Said -> {
+                synchronized(said) { said.append(e.text) }
+                saidLine.value = said.toString().trim()
+                live.value = LiveState.SPEAKING
+                if (Safety.normalize(said.toString()).contains(Safety.normalize(Prompts.LIVE_PAUSE))) safetyStop()
+            }
+            is LiveEvent.Audio -> if (live.value != LiveState.SPEAKING) live.value = LiveState.SPEAKING
+            LiveEvent.Interrupted, LiveEvent.TurnComplete -> { saveTurn(); live.value = LiveState.LISTENING }
+            // The server asks to reconnect: a new session continues the conversation.
+            LiveEvent.GoAway -> viewModelScope.launch { stopLive(); play() }
+        }
+    }
+
+    private fun safetyStop() = viewModelScope.launch {
+        val c = character.value
+        heard.setLength(0); said.setLength(0)
+        stopLive()
+        dao.add(Message(character = c.id, fromUser = false, text = PAUSE_TEXT, pause = true))
+        pause.value = true
+    }
+
+    private fun onLiveClosed(err: String?) {
+        if (session == null) return
+        session = null
+        saveTurn()
+        if (err != null) {
+            liveError.value = when {
+                err.contains("401") || err.contains("403") || err.contains("API key", true) -> "Το κλειδί του Gemini δεν δουλεύει για το Live."
+                err.contains("429") || err.contains("quota", true) || err.contains("exhausted", true) -> "Έφτασες το δωρεάν όριο του Gemini. Περίμενε λίγο ή δοκίμασε αύριο."
+                else -> "Το Live σταμάτησε ($err). Πάτα Play για να συνεχίσεις."
+            }
+            live.value = LiveState.ERROR
+        } else live.value = LiveState.OFF
+    }
+
+    /** The lines of a finished turn go into the conversation history. */
+    private fun saveTurn() {
+        val h = synchronized(heard) { heard.toString().trim().also { heard.setLength(0) } }
+        val s = synchronized(said) { said.toString().trim().also { said.setLength(0) } }
+        heardLine.value = ""; saidLine.value = ""
+        if (h.isEmpty() && s.isEmpty()) return
+        val c = character.value.id
+        viewModelScope.launch {
+            if (h.isNotEmpty()) dao.add(Message(character = c, fromUser = true, text = h))
+            if (s.isNotEmpty()) dao.add(Message(character = c, fromUser = false, text = s))
+        }
+    }
+
+    override fun onCleared() { session?.stop(); session = null }
 
     /** After the custom character or the team changes in the settings. */
     fun refresh() { character.value = settings.character() }

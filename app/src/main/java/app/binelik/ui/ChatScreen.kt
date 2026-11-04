@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
@@ -63,7 +64,7 @@ import app.binelik.data.Message
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChatScreen(vm: ChatViewModel, onSettings: () -> Unit, onCustom: () -> Unit) {
+fun ChatScreen(vm: ChatViewModel, onSettings: () -> Unit, onCustom: () -> Unit, onLive: (() -> Unit)? = null) {
     val c by vm.character.collectAsState()
     val intensity by vm.intensity.collectAsState()
     val messages by vm.messages.collectAsState()
@@ -86,6 +87,7 @@ fun ChatScreen(vm: ChatViewModel, onSettings: () -> Unit, onCustom: () -> Unit) 
                 modifier = Modifier.border(1.dp, accent.copy(alpha = 0.5f), RoundedCornerShape(6.dp)).padding(horizontal = 5.dp, vertical = 2.dp),
             )
             Spacer(Modifier.weight(1f))
+            if (onLive != null) IconButton(onLive) { Icon(Icons.Default.GraphicEq, "Live με φωνή", tint = accent) }
             IconButton(onSettings) { Icon(Icons.Default.Settings, "Ρυθμίσεις", tint = C.muted) }
         }
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {

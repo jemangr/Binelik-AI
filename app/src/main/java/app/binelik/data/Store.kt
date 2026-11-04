@@ -83,7 +83,11 @@ class Settings(context: Context) {
     fun gender(c: Character): Gender = genderOf(c.id, c.gender)
     private fun genderOf(id: String, default: Gender): Gender =
         runCatching { Gender.valueOf(p.getString("g_$id", null) ?: "") }.getOrDefault(default)
-    fun setGender(id: String, g: Gender) = p.edit().putString("g_$id", g.name).apply()
+    fun setGender(id: String, g: Gender) = p.edit().putString("g_$id", g.name).remove("v_$id").apply()
+
+    /** Which of the gender's voices the character uses (null: its own default). */
+    fun voiceIndex(id: String): Int? = p.getInt("v_$id", -1).takeIf { it >= 0 }
+    fun setVoiceIndex(id: String, i: Int) = p.edit().putInt("v_$id", i).apply()
 
     var team: String
         get() = p.getString("team", null) ?: Characters.teams.first()
