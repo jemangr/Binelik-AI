@@ -32,15 +32,18 @@ fun ReportScreen(vm: ChatViewModel, onBack: () -> Unit) {
     val clip = LocalClipboardManager.current
     var what by remember { mutableStateOf("") }
     var copied by remember { mutableStateOf(false) }
+    var noMail by remember { mutableStateOf(false) }
     val report = Report.text(context, vm.settings, what)
     Screen(t("Αναφορά προβλήματος", "Report a problem"), onBack) {
         Panel {
-            Text(t("Γράψε τι έκανες και τι έγινε. Η εφαρμογή προσθέτει την έκδοση, το κινητό και τα τελευταία σφάλματα, ποτέ τα κλειδιά ή τις κουβέντες σου.",
-                "Write what you did and what happened. The app adds the version, the phone and the last errors, never your keys or conversations."), color = C.muted, fontSize = 13.5.sp)
+            Text(t("Γράψε τι έκανες και τι έγινε. Πηγαίνει στο ${Report.EMAIL}. Η εφαρμογή προσθέτει την έκδοση, το κινητό και τα τελευταία σφάλματα, ποτέ τα κλειδιά ή τις κουβέντες σου.",
+                "Write what you did and what happened. It goes to ${Report.EMAIL}. The app adds the version, the phone and the last errors, never your keys or conversations."), color = C.muted, fontSize = 13.5.sp)
             OutlinedTextField(what, { what = it.take(2000); copied = false }, Modifier.fillMaxWidth().padding(top = 10.dp).heightIn(min = 120.dp),
                 label = { Text(t("Τι έγινε;", "What happened?")) }, placeholder = { Text(t("Π.χ. πάτησα OK στο θυμόμετρο και έκλεισε", "E.g. I pressed OK on the anger meter and it closed")) })
+            PrimaryButton(t("✉️ Αποστολή με email", "✉️ Send by email"), { if (!Report.email(context, report)) noMail = true }, Modifier.fillMaxWidth().padding(top = 10.dp))
+            if (noMail) Text(t("Δεν βρέθηκε εφαρμογή email. Πάτα Αντιγραφή και στείλ' το στο ${Report.EMAIL}.", "No email app found. Press Copy and send it to ${Report.EMAIL}."), color = C.danger, fontSize = 12.5.sp, modifier = Modifier.padding(top = 6.dp))
             Row(Modifier.fillMaxWidth().padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                PrimaryButton(if (copied) t("Αντιγράφηκε ✓", "Copied ✓") else t("Αντιγραφή", "Copy"), { clip.setText(AnnotatedString(report)); copied = true }, Modifier.weight(1f))
+                OutlinedButton({ clip.setText(AnnotatedString(report)); copied = true }, Modifier.weight(1f)) { Text(if (copied) t("Αντιγράφηκε ✓", "Copied ✓") else t("Αντιγραφή", "Copy"), color = C.text) }
                 OutlinedButton({ Share.shareText(context, report) }, Modifier.weight(1f)) { Text(t("Κοινοποίηση", "Share"), color = C.text) }
             }
             TextButton({ openUrl(context, Report.issueUrl(report)) }) { Text(t("Ή άνοιξε θέμα στο GitHub ↗", "Or open an issue on GitHub ↗"), color = C.amber) }

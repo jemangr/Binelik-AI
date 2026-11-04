@@ -166,7 +166,7 @@ class MainActivity : FragmentActivity() {
                         modifier = Modifier.padding(top = 10.dp).heightIn(max = 260.dp).verticalScroll(rememberScrollState()))
                 }
             },
-            confirmButton = { androidx.compose.material3.TextButton({ Share.shareText(this, report); onClose() }) { Text(t("Κοινοποίηση", "Share"), color = C.amber) } },
+            confirmButton = { androidx.compose.material3.TextButton({ app.binelik.extras.Report.email(this, app.binelik.extras.Report.text(this, vm.settings, t("Η εφαρμογή έκλεισε απότομα.", "The app closed suddenly."))); onClose() }) { Text(t("✉️ Email", "✉️ Email"), color = C.amber) } },
             dismissButton = {
                 androidx.compose.foundation.layout.Row {
                     androidx.compose.material3.TextButton({ clip.setText(androidx.compose.ui.text.AnnotatedString(report)) }) { Text(t("Αντιγραφή", "Copy"), color = C.muted) }

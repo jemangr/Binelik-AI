@@ -37,6 +37,19 @@ object Report {
         Crash.last(context)?.let { appendLine(); appendLine("Last crash:"); append(it.take(4000)) }
     }.trim()
 
+    const val EMAIL = "info@3wsol.gr"
+    const val SUBJECT = "Bug report Binelik AI"
+
+    /** Opens the phone's email app with the address, the subject and the report filled in. */
+    fun email(context: Context, text: String): Boolean {
+        val i = android.content.Intent(android.content.Intent.ACTION_SENDTO, android.net.Uri.parse("mailto:"))
+            .putExtra(android.content.Intent.EXTRA_EMAIL, arrayOf(EMAIL))
+            .putExtra(android.content.Intent.EXTRA_SUBJECT, SUBJECT)
+            .putExtra(android.content.Intent.EXTRA_TEXT, text)
+            .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+        return runCatching { context.startActivity(i) }.isSuccess
+    }
+
     fun issueUrl(text: String): String =
         "https://github.com/jemangr/Binelik-AI/issues/new?title=" + java.net.URLEncoder.encode("Bug: ", "UTF-8") +
             "&body=" + java.net.URLEncoder.encode(text.take(5000), "UTF-8")

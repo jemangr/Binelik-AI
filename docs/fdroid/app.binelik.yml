@@ -19,9 +19,9 @@ RepoType: git
 Repo: https://github.com/jemangr/Binelik-AI.git
 
 Builds:
-  - versionName: 1.1.1
-    versionCode: 5
-    commit: v1.1.1
+  - versionName: 1.1.2
+    versionCode: 6
+    commit: v1.1.2
     subdir: app
     gradle:
       - yes
@@ -30,5 +30,5 @@ Builds:
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 1.1.1
-CurrentVersionCode: 5
+CurrentVersion: 1.1.2
+CurrentVersionCode: 6
