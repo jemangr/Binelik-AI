@@ -95,7 +95,7 @@ fun Logo(size: Dp, color: Color = C.amber) {
 
 /** The voice circle, in the character's colour. [active] moves it; paused, it stands still and dims. */
 @Composable
-fun Orb(color: Color, size: Dp, active: Boolean = true) {
+fun Orb(color: Color, size: Dp, active: Boolean = true, face: Boolean = false, mouth: Float = 0f) {
     val col by animateColorAsState(color, tween(600), label = "orb")
     val t = rememberInfiniteTransition(label = "orb")
     val spin by t.animateFloat(0f, 360f, infiniteRepeatable(tween(18000, easing = LinearEasing)), label = "spin")
@@ -123,5 +123,15 @@ fun Orb(color: Color, size: Dp, active: Boolean = true) {
             Brush.radialGradient(listOf(Color.White.copy(alpha = 0.85f * dimmed), col.copy(alpha = dimmed), col.copy(red = col.red * 0.3f, green = col.green * 0.3f, blue = col.blue * 0.3f)), Offset(c.x - core * 0.25f, c.y - core * 0.3f), core * 1.3f),
             core, c,
         )
+        // 1.2: a simple face; the mouth opens with the voice.
+        if (face) {
+            val eye = core * 0.11f
+            val ink = Color(0xFF05080D).copy(alpha = 0.85f * dimmed)
+            drawCircle(ink, eye, Offset(c.x - core * 0.32f, c.y - core * 0.18f))
+            drawCircle(ink, eye, Offset(c.x + core * 0.32f, c.y - core * 0.18f))
+            val w = core * 0.5f
+            val h = core * (0.06f + 0.42f * mouth.coerceIn(0f, 1f))
+            drawRoundRect(ink, Offset(c.x - w / 2, c.y + core * 0.28f - h / 2), Size(w, h), androidx.compose.ui.geometry.CornerRadius(h / 2, h / 2))
+        }
     }
 }

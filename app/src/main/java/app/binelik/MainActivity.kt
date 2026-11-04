@@ -52,6 +52,14 @@ import app.binelik.ui.PrivacyScreen
 import app.binelik.ui.ReportScreen
 import app.binelik.ui.SettingsScreen
 import app.binelik.ui.StatsScreen
+import app.binelik.ui.ScreamScreen
+import app.binelik.ui.PlatesScreen
+import app.binelik.ui.BurnScreen
+import app.binelik.ui.BattleScreen
+import app.binelik.ui.RehearsalScreen
+import app.binelik.ui.BreatheScreen
+import app.binelik.ui.GroupScreen
+import app.binelik.ui.PacksScreen
 
 class MainActivity : FragmentActivity() {
     private val vm: ChatViewModel by viewModels()
@@ -61,6 +69,9 @@ class MainActivity : FragmentActivity() {
     private var leftAt = 0L
     /** The error the app closed on last time, if any (shown once, to copy and send). */
     private var crash by mutableStateOf<String?>(null)
+    /** A friend's character from a QR or a link, waiting to be saved in a Custom slot. */
+    private var imported by mutableStateOf<app.binelik.extras.ShareCharacter.Shared?>(null)
+    private var slot by mutableStateOf(1)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -68,7 +79,9 @@ class MainActivity : FragmentActivity() {
         vm.checkUpdate()
         locked = vm.settings.lock
         autoPlay = intent?.getBooleanExtra(EXTRA_PLAY, false) == true
+        pickFrom(intent)
         crash = Crash.last(this)
+        imported = app.binelik.extras.ShareCharacter.read(intent?.dataString)
         setContent {
             BinelikTheme {
                 crash?.let { CrashDialog(it) { Crash.clear(this); crash = null } }
@@ -76,26 +89,40 @@ class MainActivity : FragmentActivity() {
                 val ready = vm.settings.adult && vm.keys.has(vm.settings.provider)
                 var screen by rememberSaveable { mutableStateOf(if (!ready) "start" else if (vm.canVoice()) "live" else "chat") }
                 if (autoPlay && ready && vm.canVoice()) screen = "live"
+                if (imported != null && ready && screen != "custom") {
+                    slot = app.binelik.data.Characters.CUSTOM_SLOTS.firstOrNull { vm.settings.custom(it) == null } ?: 2
+                    screen = "custom"
+                }
                 val home = { if (vm.canVoice()) "live" else "chat" }
                 val back = when (screen) {
                     "key", "privacy", "report" -> "settings"
-                    "fight", "email", "stats" -> "fun"
+                    "fight", "email", "stats", "scream", "plates", "burn", "battle", "rehearsal", "breathe", "group", "packs" -> "fun"
                     else -> home()
                 }
                 if (screen != "live" && screen != "start" && !(screen == "chat" && !vm.canVoice())) BackHandler { screen = back }
                 when (screen) {
                     "start" -> Onboarding(vm) { screen = home() }
-                    "settings" -> SettingsScreen(vm, { screen = home() }, { screen = "key" }, { screen = "custom" }, { screen = "privacy" }, onLock = ::setLock, onReport = { screen = "report" })
+                    "settings" -> SettingsScreen(vm, { screen = home() }, { screen = "key" }, { slot = it; screen = "custom" }, { screen = "privacy" }, onLock = ::setLock, onReport = { screen = "report" })
                     "key" -> KeyScreen(vm) { screen = "settings" }
-                    "custom" -> CustomScreen(vm) { vm.refresh(); screen = home() }
-                    "live" -> LiveScreen(vm, { screen = "chat" }, { screen = "settings" }, { screen = "custom" }, { screen = "fun" }, autoPlay).also { autoPlay = false }
+                    "custom" -> CustomScreen(vm, slot, { imported = null; vm.refresh(); screen = home() }, imported)
+                    "live" -> LiveScreen(vm, { screen = "chat" }, { screen = "settings" }, { slot = it; screen = "custom" }, { screen = "fun" }, autoPlay, onCalm = { screen = "calm" }).also { autoPlay = false }
                     "privacy" -> PrivacyScreen { screen = "settings" }
                     "report" -> ReportScreen(vm) { screen = "settings" }
                     "fun" -> FunScreen(vm, { screen = home() }) { screen = if (it == "home") home() else it }
                     "fight" -> FightScreen(vm) { screen = "fun" }
                     "email" -> EmailScreen(vm) { screen = "fun" }
                     "stats" -> StatsScreen(vm) { screen = "fun" }
-                    else -> ChatScreen(vm, { screen = "settings" }, { screen = "custom" }, if (vm.canVoice()) ({ screen = "live" }) else null, { screen = "fun" })
+                    "scream" -> ScreamScreen { screen = "fun" }
+                    "plates" -> PlatesScreen { screen = "fun" }
+                    "burn" -> BurnScreen { screen = "fun" }
+                    "battle" -> BattleScreen({ screen = "fun" })
+                    "rehearsal" -> RehearsalScreen({ screen = "fun" })
+                    "breathe" -> BreatheScreen { screen = "fun" }
+                    // From the Live screen, after a pause: back goes home.
+                    "calm" -> BreatheScreen { screen = home() }
+                    "group" -> GroupScreen({ screen = "fun" })
+                    "packs" -> PacksScreen({ vm.refresh(); screen = "fun" })
+                    else -> ChatScreen(vm, { screen = "settings" }, { slot = it; screen = "custom" }, if (vm.canVoice()) ({ screen = "live" }) else null, { screen = "fun" })
                 }
             }
         }
@@ -104,7 +131,15 @@ class MainActivity : FragmentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        app.binelik.extras.ShareCharacter.read(intent.dataString)?.let { imported = it }
+        pickFrom(intent)
         if (intent.getBooleanExtra(EXTRA_PLAY, false)) autoPlay = true
+    }
+
+    /** A shortcut of the icon names the character to talk to. */
+    private fun pickFrom(i: Intent?) {
+        val id = i?.getStringExtra(app.binelik.extras.Shortcuts.EXTRA_CHARACTER) ?: return
+        vm.pick(vm.settings.character(id))
     }
 
     override fun onStop() {

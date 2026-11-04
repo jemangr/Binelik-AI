@@ -28,6 +28,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
@@ -67,7 +68,7 @@ import app.binelik.data.Message
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChatScreen(vm: ChatViewModel, onSettings: () -> Unit, onCustom: () -> Unit, onLive: (() -> Unit)? = null, onFun: () -> Unit = {}) {
+fun ChatScreen(vm: ChatViewModel, onSettings: () -> Unit, onCustom: (Int) -> Unit, onLive: (() -> Unit)? = null, onFun: () -> Unit = {}) {
     var sharing by remember { mutableStateOf<Pair<String, String?>?>(null) }
     val c by vm.character.collectAsState()
     val intensity by vm.intensity.collectAsState()
@@ -106,7 +107,7 @@ fun ChatScreen(vm: ChatViewModel, onSettings: () -> Unit, onCustom: () -> Unit, 
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Dot(accent); Spacer(Modifier.width(8.dp))
-                Text(c.name, color = accent, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
+                Text(c.label, color = accent, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
                 Spacer(Modifier.width(8.dp)); Text(t("Αλλαγή ▾", "Change ▾"), color = C.muted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
             }
             Segmented(
@@ -165,7 +166,7 @@ fun ChatScreen(vm: ChatViewModel, onSettings: () -> Unit, onCustom: () -> Unit, 
 
     if (sheet) ModalBottomSheet({ sheet = false }, containerColor = Color(0xFF0A1018)) {
         Text(t("Με ποιον θα τα πεις;", "Who do you want to talk to?"), fontWeight = FontWeight.ExtraBold, fontSize = 17.sp, modifier = Modifier.padding(horizontal = 18.dp, vertical = 4.dp))
-        CharacterList(vm, Modifier.heightIn(max = 560.dp), onCustom = { sheet = false; onCustom() }) { vm.pick(it); sheet = false }
+        CharacterList(vm, Modifier.heightIn(max = 560.dp), onCustom = { sheet = false; onCustom(it) }) { vm.pick(it); sheet = false }
     }
     if (pause) SafetyDialog { vm.pause.value = false }
     sharing?.let { (line, mine) -> ShareDialog(c, line, mine) { sharing = null } }
@@ -210,9 +211,8 @@ private fun Sources(raw: String, accent: Color) {
 
 /** The list of characters (bottom sheet and first-run step): colour, name, what it does, voice. */
 @Composable
-fun CharacterList(vm: ChatViewModel, modifier: Modifier = Modifier, onCustom: (() -> Unit)? = null, onPick: (Character) -> Unit) {
+fun CharacterList(vm: ChatViewModel, modifier: Modifier = Modifier, onCustom: ((Int) -> Unit)? = null, onPick: (Character) -> Unit) {
     val current by vm.character.collectAsState()
-    val custom = vm.settings.custom()
     LazyColumn(modifier.fillMaxWidth(), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 4.dp)) {
         item {
             Row(
@@ -227,17 +227,23 @@ fun CharacterList(vm: ChatViewModel, modifier: Modifier = Modifier, onCustom: ((
                 }
             }
         }
-        items(Characters.all + listOfNotNull(custom), key = { it.id }) { c -> CharacterRow(c, vm.settings.gender(c), c.id == current.id) { onPick(c) } }
-        if (onCustom != null) item {
-            Row(
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).clickable(role = Role.Button) { onCustom() }.padding(10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Box(Modifier.size(34.dp).clip(CircleShape).border(2.dp, C.dim, CircleShape), contentAlignment = Alignment.Center) { Text("+", color = C.muted, fontSize = 18.sp) }
-                Spacer(Modifier.width(12.dp))
-                Column {
-                    Text(if (custom == null) t("Φτιάξε τον δικό σου", "Make your own") else t("Άλλαξε τον δικό σου", "Change your own"), fontWeight = FontWeight.Bold, fontSize = 14.5.sp)
-                    Text(t("Περιγραφή, φωνή, χρώμα", "Description, voice, colour"), color = C.muted, fontSize = 12.sp)
+        items(Characters.all + vm.settings.packs(), key = { it.id }) { c -> CharacterRow(c, vm.settings.gender(c), c.id == current.id) { onPick(c) } }
+        // The user's own: «Custom: <name>», with a pencil to change it; an empty slot is a «+».
+        Characters.CUSTOM_SLOTS.forEach { slot ->
+            val own = vm.settings.custom(slot)
+            if (own != null) item(key = own.id) {
+                CharacterRow(own, vm.settings.gender(own), own.id == current.id, onEdit = onCustom?.let { { it(slot) } }) { onPick(own) }
+            } else if (onCustom != null) item(key = "add$slot") {
+                Row(
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).clickable(role = Role.Button) { onCustom(slot) }.padding(10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(Modifier.size(34.dp).clip(CircleShape).border(2.dp, C.dim, CircleShape), contentAlignment = Alignment.Center) { Text("+", color = C.muted, fontSize = 18.sp) }
+                    Spacer(Modifier.width(12.dp))
+                    Column {
+                        Text(t("Φτιάξε τον Custom $slot", "Make Custom $slot"), fontWeight = FontWeight.Bold, fontSize = 14.5.sp)
+                        Text(t("Όνομα, περιγραφή, φωνή, χρώμα, ή από QR φίλου", "Name, description, voice, colour, or from a friend's QR"), color = C.muted, fontSize = 12.sp)
+                    }
                 }
             }
         }
@@ -246,7 +252,7 @@ fun CharacterList(vm: ChatViewModel, modifier: Modifier = Modifier, onCustom: ((
 }
 
 @Composable
-private fun CharacterRow(c: Character, gender: Gender, current: Boolean, onClick: () -> Unit) {
+private fun CharacterRow(c: Character, gender: Gender, current: Boolean, onEdit: (() -> Unit)? = null, onClick: () -> Unit) {
     val k = Color(c.color)
     Row(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
@@ -258,10 +264,11 @@ private fun CharacterRow(c: Character, gender: Gender, current: Boolean, onClick
         Box(Modifier.size(34.dp).clip(CircleShape).background(androidx.compose.ui.graphics.Brush.radialGradient(listOf(Color.White.copy(alpha = 0.7f), k, k.copy(red = k.red * 0.35f, green = k.green * 0.35f, blue = k.blue * 0.35f)))))
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-            Text(c.name, fontWeight = FontWeight.Bold, fontSize = 14.5.sp)
+            Text(c.label, fontWeight = FontWeight.Bold, fontSize = 14.5.sp)
             Text(c.tagline, color = C.muted, fontSize = 12.sp, maxLines = 2)
         }
         Text(if (gender == Gender.MALE) t("Ανδρική", "Male") else t("Γυναικεία", "Female"), color = k, fontFamily = FontFamily.Monospace, fontSize = 10.sp)
+        if (onEdit != null) androidx.compose.material3.IconButton(onEdit) { androidx.compose.material3.Icon(Icons.Default.Edit, t("Αλλαγή", "Change"), tint = C.muted) }
     }
 }
 

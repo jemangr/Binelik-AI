@@ -86,7 +86,7 @@ class LiveCarScreen(ctx: CarContext) : Screen(ctx) {
 class CharactersCarScreen(ctx: CarContext) : Screen(ctx) {
     override fun onGetTemplate(): Template {
         val list = ItemList.Builder()
-        (Characters.all + listOfNotNull(Engine.settings.custom())).take(6 * 4).forEach { c ->
+        Engine.settings.everyone().take(6 * 4).forEach { c ->
             list.addItem(
                 Row.Builder().setTitle(c.name).addText(c.tagline).setOnClickListener {
                     Engine.settings.characterId = c.id

@@ -48,7 +48,15 @@
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
-            android:windowSoftInputMode="adjustResize" />
+            android:windowSoftInputMode="adjustResize">
+            <!-- A friend's character, from a QR or a link: binelik://character?d=… -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="binelik" android:host="character" />
+            </intent-filter>
+        </activity>
         <!-- Two launcher icons, one on at a time: the logo, or the discreet «Σημειώσεις» (Settings). -->
         <activity-alias
             android:name=".Launcher"

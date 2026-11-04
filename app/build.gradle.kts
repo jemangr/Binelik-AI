@@ -17,8 +17,8 @@ android {
         applicationId = "app.binelik"
         minSdk = 29
         targetSdk = 36
-        versionCode = 7
-        versionName = "1.1.3"
+        versionCode = 8
+        versionName = "1.2.0"
         // F-Droid builds with -PnoUpdateCheck: F-Droid brings its own updates (signed with its key).
         buildConfigField("boolean", "UPDATE_CHECK", (!project.hasProperty("noUpdateCheck")).toString())
     }
@@ -92,6 +92,7 @@ dependencies {
     implementation(libs.androidx.car.app)
     implementation(libs.androidx.biometric)
     implementation(libs.androidx.fragment)
+    implementation(libs.zxing.core)
 
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)

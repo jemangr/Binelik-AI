@@ -56,6 +56,8 @@ interface Conversation {
     var voiceMuted: Boolean
     fun stop()
     fun interrupt() {}
+    /** Push to talk: the button was let go. What was said still counts (Gemini ends the turn on mute). */
+    fun release() { micMuted = true }
 }
 
 /** The Gemini Live API messages, without Android, so they can be tested. */
@@ -201,6 +203,20 @@ object Speaker {
 
     /** The gain chosen in the settings: 1, 1.6 or 2.2. */
     @Volatile var gain = 1f
+
+    /** How loud the voice is right now, 0–1, for the mouth of the face in the circle. */
+    @Volatile var level = 0f
+    @Volatile var levelAt = 0L
+
+    fun measure(pcm: ByteArray) {
+        var sum = 0.0; var n = 0; var i = 0
+        while (i + 1 < pcm.size) { val v = ((pcm[i + 1].toInt() shl 8) or (pcm[i].toInt() and 0xFF)).toShort().toInt(); sum += v.toDouble() * v; n++; i += 8 }
+        level = if (n == 0) 0f else (kotlin.math.sqrt(sum / n) / 8000.0).toFloat().coerceIn(0f, 1f)
+        levelAt = System.currentTimeMillis()
+    }
+
+    /** The level, falling back to silence when nothing has played for a moment. */
+    fun levelNow(): Float = if (System.currentTimeMillis() - levelAt > 250) 0f else level
 }
 
 class LiveSession(
@@ -304,7 +320,7 @@ class LiveSession(
         t.play()
         track = t
         playJob = scope.launch(Dispatchers.IO) {
-            for (pcm in playback) { if (closed) break; val b = Speaker.boost(pcm, Speaker.gain); t.write(b, 0, b.size) }
+            for (pcm in playback) { if (closed) break; Speaker.measure(pcm); val b = Speaker.boost(pcm, Speaker.gain); t.write(b, 0, b.size) }
         }
     }
 

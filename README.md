@@ -53,34 +53,49 @@
 | 🎖️ | **Ο Λοχίας** | «ΠΡΟΣΟΧΗ! Τι είναι αυτά, φαντάρε;» |
 | ⚪ | **Ψυχαναλυτής** | «Και πώς σε κάνει να νιώθεις αυτό;» |
 | 🟡 | **Ταξιτζής** | Τα έχει με όλους και έχει άποψη για όλα |
-| ➕ | **Ο δικός σου** | Τον περιγράφεις εσύ: όνομα, ύφος, φωνή, χρώμα |
+| ➕ | **Custom 1 και Custom 2** | Τους περιγράφεις εσύ: όνομα, ύφος, φωνή, χρώμα. Στη λίστα φαίνονται ως «Custom: Παναγιώτης». Τους δίνεις σε φίλο με **QR ή link**, χωρίς server |
+| 📦 | **Περισσότεροι χαρακτήρες** | Πακέτα από το [`packs/characters.json`](packs/characters.json) του repo, χωρίς νέα έκδοση: η πρώην σου, ο πρώην σου, ο σπιτονοικοκύρης, η κουτσομπόλα θεία, ο εφοριακός |
 
 Οι χαρακτήρες απαντούν σε αυτά που τους λες, με τον τρόπο τους, χωρίς να επαναλαμβάνουν τα ίδια. Κάθε χαρακτήρας έχει τρεις εντάσεις (**ήπια**, **μέτρια**, **βαριά**) και δική του φωνή, ανδρική ή γυναικεία, που την αλλάζεις και την ακούς από τις Ρυθμίσεις («▶ Άκου»).
 
 ## Παιχνίδια (🎲)
 
+<p align="center">
+<img src="docs/screenshots/12-battle.png" width="190" alt="Κόντρα βρισιών">
+<img src="docs/screenshots/13-plates.png" width="190" alt="Σπάσε πιάτα">
+<img src="docs/screenshots/15-group.png" width="190" alt="Ομαδική κουβέντα">
+<img src="docs/screenshots/14-custom.png" width="190" alt="Custom χαρακτήρας με QR">
+</p>
+
+- **Ουρλιαχτόμετρο:** φώναξε όσο πιο δυνατά μπορείς για 3 δευτερόλεπτα· βαθμός 0–100 και ρεκόρ (μετράει μόνο την ένταση, δεν γράφει ήχο).
+- **Σπάσε πιάτα:** πατάς ένα πιάτο ή κουνάς το κινητό, και σπάει με ήχο και δόνηση. Όπα!
+- **Γράψ' το και κάψ' το:** ό,τι σε τρώει καίγεται και σβήνεται για πάντα, χωρίς να πάει πουθενά.
+- **Κόντρα βρισιών:** 3 γύροι με τον χαρακτήρα· το AI βαθμολογεί την εξυπνάδα, όχι τη χυδαιότητα.
+- **Πρόβα δύσκολης κουβέντας:** αύξηση από το αφεντικό, «πρέπει να μιλήσουμε», παράπονο στο δημόσιο… Ο χαρακτήρας παίζει τον άλλον με αντίσταση και στο τέλος παίρνεις συμβουλές.
+- **Ήρεμο κλείσιμο:** ένα λεπτό αναπνοές με φωνή (εισπνοή 4, κράτα 4, εκπνοή 6), και μετά από κάθε Live.
+- **Ομαδική κουβέντα:** δύο χαρακτήρες μαζί, με δύο φωνές (του κινητού).
 - **Καβγάς δύο χαρακτήρων:** π.χ. η μάνα σου με τη γυναίκα σου για το ποιος μαγειρεύει καλύτερα· εσύ ρίχνεις λάδι στη φωτιά.
 - **Ψήσε με:** ο χαρακτήρας σε κράζει με όσα του έχεις πει (με χιούμορ, όχι για να πληγώσει).
 - **Το email που δεν θα στείλεις:** το θυμωμένο, και με ένα κουμπί το ευγενικό που στέλνεται.
 - **Ζάρι:** τυχαίος χαρακτήρας, τυχαία ένταση.
-- **Μπινελικόμετρο, θυμόμετρο** (πριν και μετά το Live), **βραβεία**, σύνοψη της εβδομάδας.
+- **Μπινελικόμετρο, θυμόμετρο** (πριν και μετά το Live), **ημερολόγιο θυμού** («οι Δευτέρες σου είναι κόκκινες»), **βραβεία**, σύνοψη της εβδομάδας.
 - **Κάρτα με την ατάκα:** κράτα πατημένη μια απάντηση και μοιράσου την ως εικόνα.
 - **Μπιπ:** οι χαρακτήρες λένε «μπιπ» αντί για βρισιές, σαν λογοκριμένη τηλεόραση. **Ύφος περιοχής:** Αθήνα, Θεσσαλονίκη, Κρήτη, Κύπρος.
 - **Ατάκα της ημέρας** (ειδοποίηση), **widget** και κουμπί στις γρήγορες ρυθμίσεις «Ξέσπα τώρα».
 
 ## Ρυθμίσεις
 
-Γλώσσα (Ελληνικά / English), ένταση φωνής (κανονική, δυνατή, πολύ δυνατή), μέγεθος γραμμάτων, ταχύτητα της φωνής του κινητού, η οθόνη ανοιχτή στο Live, **κλείδωμα** με δαχτυλίδι ή PIN, **διακριτικό εικονίδιο** («Σημειώσεις»), ειδοποίηση για νέα έκδοση (η ενημέρωση γίνεται μέσα από την εφαρμογή), πόσο χρησιμοποίησες σήμερα το AI, κοινοποίηση ή σβήσιμο κουβέντας, επαναφορά.
+AI (Gemini, DeepSeek, Groq, OpenRouter, και το μοντέλο), γλώσσα (Ελληνικά / English), **πατάς και μιλάς** (walkie-talkie), **πρόσωπο** στον κύκλο που κουνάει το στόμα με τη φωνή, **ήχοι χαρακτήρων** (κόρνα, σφυρίχτρα, γήπεδο…), ένταση φωνής (κανονική, δυνατή, πολύ δυνατή), μέγεθος γραμμάτων, ταχύτητα της φωνής του κινητού, η οθόνη ανοιχτή στο Live, **κλείδωμα** με δαχτυλίδι ή PIN, **διακριτικό εικονίδιο** («Σημειώσεις»), ειδοποίηση για νέα έκδοση (η ενημέρωση γίνεται μέσα από την εφαρμογή), πόσο χρησιμοποίησες σήμερα το AI, κοινοποίηση ή σβήσιμο κουβέντας, επαναφορά.
 
 ## Φωνή
 
-| | Gemini (δωρεάν κλειδί) | DeepSeek |
+| | Gemini (δωρεάν κλειδί) | DeepSeek (με υπόλοιπο) · Groq · OpenRouter (δωρεάν) |
 |---|---|---|
 | Πώς μιλάει | **Live**: ζωντανή κουβέντα, τον διακόπτεις όποτε θες | Η φωνή του κινητού, γύρο γύρο |
 | Φωνές | 4 ανδρικές, 4 γυναικείες | Οι φωνές του κινητού (λίγο πιο βαριές ή πιο ψιλές) |
-| Κείμενο | Ναι | Ναι |
+| Κείμενο | Ναι, με αναζήτηση Google | Ναι |
 
-Στη μέση είναι το **Pause/Play**, και δίπλα δύο ξεχωριστά **Mute**: το μικρόφωνό σου και η φωνή του AI. Αλλάζεις χαρακτήρα ή ένταση και την ώρα που μιλάς. Με την οθόνη σβηστή η κουβέντα συνεχίζει, με ειδοποίηση που έχει κουμπί Παύση.
+Στη μέση είναι το **Pause/Play**, και δίπλα δύο ξεχωριστά **Mute**: το μικρόφωνό σου και η φωνή του AI. Με το **«Πατάς και μιλάς»** κρατάς ένα κουμπί όσο μιλάς (καλό με θόρυβο ή στο αυτοκίνητο). Με παρατεταμένο πάτημα στο εικονίδιο ανοίγεις κατευθείαν Live με τους 3 χαρακτήρες που μιλάς πιο συχνά. Αλλάζεις χαρακτήρα ή ένταση και την ώρα που μιλάς. Με την οθόνη σβηστή η κουβέντα συνεχίζει, με ειδοποίηση που έχει κουμπί Παύση.
 
 ## Android Auto
 
@@ -99,14 +114,14 @@
 4. Εκεί πάτα **Create API key**, μετά **Copy**, και γύρνα στην εφαρμογή. Το κλειδί μπαίνει μόνο του και δοκιμάζεται.
 5. Διάλεξε χαρακτήρα, πάτα **Play** και μίλα του. Ή πάτα το εικονίδιο της κουβέντας για να γράψεις.
 
-Το **Gemini** έχει δωρεάν κλειδί, με ημερήσια όρια. Το **DeepSeek** θέλει μικρό υπόλοιπο, π.χ. 2 $. Αναλυτικές οδηγίες υπάρχουν και μέσα στην εφαρμογή, στο «Περισσότερες πληροφορίες».
+Το **Gemini** έχει δωρεάν κλειδί, με ημερήσια όρια. Δωρεάν είναι και το **Groq** (πολύ γρήγορο) και τα μοντέλα «:free» του **OpenRouter**, μόνο με κείμενο και τη φωνή του κινητού. Το **DeepSeek** θέλει μικρό υπόλοιπο, π.χ. 2 $. Αναλυτικές οδηγίες υπάρχουν και μέσα στην εφαρμογή, στο «Περισσότερες πληροφορίες».
 
 ## Ιδιωτικότητα: δεν κρατάμε τίποτα
 
 - Δεν υπάρχει δικός μας server, λογαριασμός, analytics ή trackers.
 - Οι κουβέντες μένουν μόνο στο κινητό σου. Δεν μπαίνουν ούτε στο backup του Android.
 - Το κλειδί σου είναι κρυπτογραφημένο με το Android Keystore.
-- Ό,τι γράφεις πηγαίνει απευθείας στο AI που διάλεξες (Google ή DeepSeek), με το δικό σου κλειδί, και ισχύει η πολιτική τους. Με δωρεάν κλειδί Gemini, η Google μπορεί να χρησιμοποιεί τις κουβέντες για να βελτιώνει τα προϊόντα της.
+- Ό,τι γράφεις πηγαίνει απευθείας στο AI που διάλεξες (Google, DeepSeek, Groq ή OpenRouter), με το δικό σου κλειδί, και ισχύει η πολιτική τους. Με δωρεάν κλειδί Gemini, η Google μπορεί να χρησιμοποιεί τις κουβέντες για να βελτιώνει τα προϊόντα της.
 
 Όλη η πολιτική: [PRIVACY.md](PRIVACY.md).
 
@@ -130,7 +145,8 @@
 | **0.3** | Φωνή και με το DeepSeek (από το κινητό) · δείγμα φωνής · φωνή με σβηστή οθόνη |
 | **0.4** | Android Auto (με «άγνωστες πηγές») |
 | **1.0** | Αγγλικά (οθόνες και χαρακτήρες) |
-| **1.1** | Ενημέρωση μέσα από την εφαρμογή, 7 νέοι χαρακτήρες, παιχνίδια, στατιστικά, κλείδωμα, δυνατότερη φωνή από το μεγάφωνο |
+| **1.1** | Ενημέρωση μέσα από την εφαρμογή, 8 νέοι χαρακτήρες, παιχνίδια, στατιστικά, κλείδωμα, δυνατότερη φωνή από το μεγάφωνο, αναφορά προβλήματος |
+| **1.2** | Ουρλιαχτόμετρο, πιάτα, κάψ' το, κόντρα βρισιών, πρόβα, αναπνοές, ημερολόγιο θυμού, ομαδική κουβέντα, 2 custom με QR, πακέτα χαρακτήρων από το GitHub, πρόσωπο στον κύκλο, πατάς και μιλάς, συντομεύσεις, Groq και OpenRouter, ήχοι χαρακτήρων |
 
 Επόμενα, αν υπάρξει ενδιαφέρον: περισσότερες γλώσσες, ρολόι. F-Droid: τα κείμενα και η περιγραφή είναι έτοιμα ([docs/fdroid](docs/fdroid/README.md)).
 
@@ -163,12 +179,12 @@ Kotlin, Jetpack Compose, Room, OkHttp. Android 10 και μετά.
 <img src="docs/screenshots/en-characters.png" width="220" alt="The characters">
 </p>
 
-**Vent at an AI character.** Binelik AI is an open-source Android app, in Greek and English, where you rant and swear at a character, and it answers in its own way: it fights back, agrees with you, listens patiently, or plays devil's advocate. There are 21 characters plus your own, each with three intensity levels and its own male or female voice.
+**Vent at an AI character.** Binelik AI is an open-source Android app, in Greek and English, where you rant and swear at a character, and it answers in its own way: it fights back, agrees with you, listens patiently, or plays devil's advocate. There are 21 characters plus two of your own (shown as “Custom: name”, shareable with a QR or a link) and packs of new ones from this repository, each with three intensity levels and its own male or female voice.
 
-- **Games:** two characters fighting, "roast me", the angry email you won't send (and the polite one you will), dice, swear meter, anger meter, badges, share cards, beep mode, regional style, line of the day, widget and quick settings tile.
+- **Games:** scream meter, smash plates, write it and burn it, insult battle (the AI scores the wit), rehearse a hard talk (with tips), one minute of guided breathing, anger calendar, group chat with two characters, two characters fighting, "roast me", the angry email you won't send (and the polite one you will), dice, swear meter, anger meter, badges, share cards, beep mode, regional style, line of the day, widget and quick settings tile.
 - **By voice or text:** press Play and talk (Gemini Live, or the phone's voice with DeepSeek), with Pause/Play and two separate mutes (your microphone, its voice). It keeps going with the screen off, and in **Android Auto** (with “unknown sources” on in Android Auto's developer settings).
 
-- **Bring your own key:** Gemini (free key) or DeepSeek. The app opens the key page, and when you copy the key it is picked up automatically.
+- **Bring your own key:** Gemini (free key), DeepSeek, Groq (free) or OpenRouter (free “:free” models). Push to talk, a face in the voice circle, character sounds, icon shortcuts. The app opens the key page, and when you copy the key it is picked up automatically.
 - **Nothing kept:** no server, no account, no analytics. Conversations stay on your phone and are excluded from Android backups. The key is encrypted with the Android Keystore.
 - **Safety:** mentions of suicide or self-harm, and real intent of violence, stop the character at once and show help numbers. The check runs on the phone before anything reaches the AI.
 - **Install:** [download BinelikAI.apk](https://github.com/jemangr/Binelik-AI/releases/latest/download/BinelikAI.apk) on your phone, open it and allow “install unknown apps”.

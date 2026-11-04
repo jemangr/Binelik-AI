@@ -166,14 +166,15 @@ fun KeyStep(vm: ChatViewModel, onSaved: () -> Unit) {
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(t("Βάλε το κλειδί σου", "Add your key"), fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
-        Segmented(
-            Provider.entries, provider, { if (it == Provider.GEMINI) t("Gemini · δωρεάν", "Gemini · free") else "DeepSeek" }, blue,
-            onPick = { provider = it; state = if (vm.keys.has(it)) KeyState.OK else KeyState.WAITING; shown = "" },
-        )
+        ProviderPicker(provider, blue) { provider = it; state = if (vm.keys.has(it)) KeyState.OK else KeyState.WAITING; shown = "" }
         StepLine(1, t("Πάτα το κουμπί και φτιάξε κλειδί", "Press the button and make a key"),
-            if (provider == Provider.GEMINI) t("Ανοίγει το Google AI Studio. Πατάς «Create API key» και μετά «Copy».", "Google AI Studio opens. Press “Create API key”, then “Copy”.")
-            else t("Ανοίγει το DeepSeek Platform. Πατάς «Create new API key» και μετά «Copy». Το DeepSeek θέλει υπόλοιπο (π.χ. 2 $).", "DeepSeek Platform opens. Press “Create new API key”, then “Copy”. DeepSeek needs a balance (e.g. $2)."))
-        PrimaryButton(if (provider == Provider.GEMINI) t("Άνοιγμα Google AI Studio ↗", "Open Google AI Studio ↗") else t("Άνοιγμα DeepSeek Platform ↗", "Open DeepSeek Platform ↗"), { openUrl(context, provider.keyPage) })
+            when (provider) {
+                Provider.GEMINI -> t("Ανοίγει το Google AI Studio. Πατάς «Create API key» και μετά «Copy».", "Google AI Studio opens. Press “Create API key”, then “Copy”.")
+                Provider.DEEPSEEK -> t("Ανοίγει το DeepSeek Platform. Πατάς «Create new API key» και μετά «Copy». Το DeepSeek θέλει υπόλοιπο (π.χ. 2 $).", "DeepSeek Platform opens. Press “Create new API key”, then “Copy”. DeepSeek needs a balance (e.g. $2).")
+                Provider.GROQ -> t("Ανοίγει το GroqCloud. Πατάς «Create API Key», δίνεις όνομα και μετά «Copy». Δωρεάν, με όρια ανά λεπτό και ανά μέρα.", "GroqCloud opens. Press “Create API Key”, give a name, then “Copy”. Free, with limits per minute and per day.")
+                Provider.OPENROUTER -> t("Ανοίγει το OpenRouter. Πατάς «Create Key», δίνεις όνομα και μετά «Copy». Τα μοντέλα «:free» δεν χρεώνουν, με όριο μηνυμάτων τη μέρα.", "OpenRouter opens. Press “Create Key”, give a name, then “Copy”. The “:free” models cost nothing, with a daily message limit.")
+            })
+        PrimaryButton(t("Άνοιγμα ${keySite(provider)} ↗", "Open ${keySite(provider)} ↗"), { openUrl(context, provider.keyPage) })
         StepLine(2, t("Γύρνα εδώ", "Come back here"), t("Μόλις το αντιγράψεις, το βάζουμε μόνοι μας. Δεν χρειάζεται επικόλληση.", "As soon as you copy it, we put it in ourselves. No need to paste."))
         KeyBox(state, shown)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -281,6 +282,22 @@ object KeyHelp {
             t("Πάτα «Copy». Το κλειδί ξεκινά με «sk-» και φαίνεται μόνο αυτή τη φορά.", "Press “Copy”. The key starts with “sk-” and is shown only this once."),
             t("Γύρνα στο Binelik AI. Μπαίνει μόνο του και δοκιμάζεται.", "Come back to Binelik AI. It goes in by itself and is tested."),
         )
+        Provider.GROQ -> listOf(
+            t("Το Groq έχει δωρεάν κλειδί, χωρίς κάρτα, με όρια ανά λεπτό και ανά μέρα. Είναι πολύ γρήγορο.", "Groq has a free key, no card, with limits per minute and per day. It is very fast."),
+            t("Πάτα «Άνοιγμα GroqCloud». Ανοίγει το console.groq.com/keys.", "Press “Open GroqCloud”. console.groq.com/keys opens."),
+            t("Κάνε εγγραφή με email, Google ή GitHub.", "Sign up with an email, Google or GitHub."),
+            t("Πάτα «Create API Key», δώσε όνομα, π.χ. «Binelik», και πάτα «Submit».", "Press “Create API Key”, give it a name, e.g. “Binelik”, and press “Submit”."),
+            t("Πάτα «Copy». Το κλειδί ξεκινά με «gsk_» και φαίνεται μόνο αυτή τη φορά.", "Press “Copy”. The key starts with “gsk_” and is shown only this once."),
+            t("Γύρνα στο Binelik AI. Μπαίνει μόνο του και δοκιμάζεται.", "Come back to Binelik AI. It goes in by itself and is tested."),
+        )
+        Provider.OPENROUTER -> listOf(
+            t("Το OpenRouter δίνει πολλά μοντέλα από ένα κλειδί. Όσα τελειώνουν σε «:free» δεν χρεώνουν, με όριο μηνυμάτων τη μέρα.", "OpenRouter gives many models with one key. Those ending in “:free” cost nothing, with a daily message limit."),
+            t("Πάτα «Άνοιγμα OpenRouter». Ανοίγει το openrouter.ai.", "Press “Open OpenRouter”. openrouter.ai opens."),
+            t("Κάνε εγγραφή με email, Google ή GitHub.", "Sign up with an email, Google or GitHub."),
+            t("Πάτα «Create Key», δώσε όνομα, π.χ. «Binelik», και πάτα «Create».", "Press “Create Key”, give it a name, e.g. “Binelik”, and press “Create”."),
+            t("Πάτα «Copy». Το κλειδί ξεκινά με «sk-or-v1-» και φαίνεται μόνο αυτή τη φορά.", "Press “Copy”. The key starts with “sk-or-v1-” and is shown only this once."),
+            t("Γύρνα στο Binelik AI. Μπαίνει μόνο του και δοκιμάζεται. Το μοντέλο το αλλάζεις από τις Ρυθμίσεις.", "Come back to Binelik AI. It goes in by itself and is tested. You change the model in the Settings."),
+        )
     }
 
     fun faq(p: Provider): List<Pair<String, String>> = when (p) {
@@ -296,6 +313,14 @@ object KeyHelp {
             t("Πού πάνε οι κουβέντες;", "Where do the conversations go?") to t("Στους servers του DeepSeek, στην Κίνα, σύμφωνα με την πολιτική απορρήτου τους.", "To DeepSeek's servers, in China, under their privacy policy."),
             t("Γράφει ότι τέλειωσε το υπόλοιπο", "It says the balance ran out") to t("Μπες στο platform.deepseek.com και πάτα «Top up».", "Go to platform.deepseek.com and press “Top up”."),
             t("Είναι ασφαλές;", "Is it safe?") to t("Το κλειδί μένει κρυπτογραφημένο μόνο στο κινητό σου. Αν διαρρεύσει, σβήσ' το από το «API keys» και φτιάξε νέο.", "The key stays encrypted on your phone only. If it leaks, delete it under “API keys” and make a new one."),
+        )
+        Provider.GROQ, Provider.OPENROUTER -> listOf(
+            t("Έχει φωνή;", "Does it have a voice?") to t("Δίνει μόνο κείμενο. Η φωνή είναι του κινητού σου, χωρίς πραγματικό Live. Για Live, βάλε Gemini.", "It gives only text. The voice is your phone's own, without real Live. For Live, use Gemini."),
+            t("Πού πάνε οι κουβέντες;", "Where do the conversations go?") to (if (p == Provider.GROQ) t("Στους servers του Groq, στις ΗΠΑ, σύμφωνα με την πολιτική απορρήτου τους.", "To Groq's servers, in the USA, under their privacy policy.")
+                else t("Στο OpenRouter (ΗΠΑ) και από εκεί στην εταιρεία του μοντέλου που διάλεξες. Κάποια δωρεάν μοντέλα κρατούν τις κουβέντες για εκπαίδευση: δες τις ρυθμίσεις απορρήτου στο openrouter.ai.", "To OpenRouter (USA) and from there to the company of the model you chose. Some free models keep conversations for training: see the privacy settings on openrouter.ai.")),
+            t("Μιλάει καλά ελληνικά;", "Does it speak Greek well?") to t("Εξαρτάται από το μοντέλο. Αν δεν σου αρέσει, άλλαξέ το από τις Ρυθμίσεις (π.χ. από τη λίστα του ${p.label}).", "It depends on the model. If you don't like it, change it in the Settings (e.g. from ${p.label}'s list)."),
+            t("Γράφει ότι το μοντέλο δεν υπάρχει", "It says the model doesn't exist") to t("Οι δωρεάν λίστες αλλάζουν συχνά. Βάλε άλλο μοντέλο από τις Ρυθμίσεις.", "The free lists change often. Set another model in the Settings."),
+            t("Είναι ασφαλές;", "Is it safe?") to t("Το κλειδί μένει κρυπτογραφημένο μόνο στο κινητό σου. Αν διαρρεύσει, σβήσ' το και φτιάξε νέο.", "The key stays encrypted on your phone only. If it leaks, delete it and make a new one."),
         )
     }
 }

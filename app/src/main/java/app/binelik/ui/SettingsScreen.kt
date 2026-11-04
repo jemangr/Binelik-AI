@@ -89,7 +89,7 @@ fun SwitchRow(title: String, sub: String, initial: Boolean, onChange: (Boolean) 
 }
 
 @Composable
-fun SettingsScreen(vm: ChatViewModel, onBack: () -> Unit, onKey: () -> Unit, onCustom: () -> Unit, onPrivacy: () -> Unit, onLock: (Boolean) -> Unit = {}, onReport: () -> Unit = {}) {
+fun SettingsScreen(vm: ChatViewModel, onBack: () -> Unit, onKey: () -> Unit, onCustom: (Int) -> Unit, onPrivacy: () -> Unit, onLock: (Boolean) -> Unit = {}, onReport: () -> Unit = {}) {
     val context = LocalContext.current
     val c by vm.character.collectAsState()
     val accent = Color(c.color)
@@ -102,10 +102,10 @@ fun SettingsScreen(vm: ChatViewModel, onBack: () -> Unit, onKey: () -> Unit, onC
     Screen(t("Ρυθμίσεις", "Settings"), onBack) {
         Panel {
             Label("AI")
-            Segmented(Provider.entries, provider, { it.label }, accent, {
+            ProviderPicker(provider, accent) {
                 provider = it; vm.settings.provider = it
                 if (!vm.keys.has(it)) onKey()
-            })
+            }
             Spacer(Modifier.height(10.dp))
             Text(
                 if (vm.keys.has(provider)) t("✓ Υπάρχει κλειδί για το ${provider.label}, κρυπτογραφημένο στο κινητό.", "✓ There is a ${provider.label} key, encrypted on the phone.") else t("Δεν υπάρχει κλειδί για το ${provider.label}.", "There is no ${provider.label} key."),
@@ -117,10 +117,18 @@ fun SettingsScreen(vm: ChatViewModel, onBack: () -> Unit, onKey: () -> Unit, onC
             if (provider == Provider.DEEPSEEK) Text(
                 bal?.let { t("Υπόλοιπο DeepSeek: $it", "DeepSeek balance: $it") } ?: t("Υπόλοιπο: δεν φαίνεται τώρα (internet;)", "Balance: not available right now (internet?)"),
                 color = C.amber, fontWeight = FontWeight.SemiBold, fontSize = 13.5.sp,
-            ) else Text(
+            ) else if (provider == Provider.GEMINI) Text(
                 t("Με κλειδί με billing, το υπόλοιπο και τις χρεώσεις του Gemini τα δείχνει μόνο η Google, στο console του Google Cloud (Billing).", "With a billing key, Gemini's balance and charges are shown only by Google, in the Google Cloud console (Billing)."),
                 color = C.dim, fontSize = 12.sp,
             )
+            if (provider != Provider.GEMINI) {
+                var model by remember(provider) { mutableStateOf(vm.settings.model(provider)) }
+                OutlinedTextField(model, { model = it; vm.settings.setModel(provider, it) }, Modifier.fillMaxWidth().padding(top = 8.dp), singleLine = true,
+                    label = { Text(t("Μοντέλο", "Model")) },
+                    supportingText = { Text(t("Προεπιλογή: ${provider.model}. Άδειο = προεπιλογή.", "Default: ${provider.model}. Empty = default.")) })
+                if (provider == Provider.OPENROUTER) TextButton({ openUrl(context, "https://openrouter.ai/models?max_price=0") }) { Text(t("Τα δωρεάν μοντέλα του OpenRouter ↗", "OpenRouter's free models ↗"), color = accent) }
+                if (provider == Provider.GROQ) TextButton({ openUrl(context, "https://console.groq.com/docs/models") }) { Text(t("Τα μοντέλα του Groq ↗", "Groq's models ↗"), color = accent) }
+            }
             if (provider == Provider.GEMINI) TextButton({ openUrl(context, "https://console.cloud.google.com/billing") }) { Text(t("Άνοιγμα Google Cloud Billing ↗", "Open Google Cloud Billing ↗"), color = accent) }
             val (texts, secs) = vm.settings.usage(provider)
             Text(
@@ -157,6 +165,9 @@ fun SettingsScreen(vm: ChatViewModel, onBack: () -> Unit, onKey: () -> Unit, onC
             Segmented(listOf(0.9f, 1.05f, 1.25f), rate, { when (it) { 0.9f -> t("Αργά", "Slow"); 1.05f -> t("Κανονικά", "Normal"); else -> t("Γρήγορα", "Fast") } }, accent, {
                 rate = it; vm.settings.speechRate = it; app.binelik.ai.PhoneVoice.rate = it
             }, Modifier.padding(top = 6.dp, bottom = 4.dp))
+            SwitchRow(t("Πατάς και μιλάς", "Push to talk"), t("Κρατάς ένα κουμπί όσο μιλάς, αντί για ανοιχτό μικρόφωνο. Καλό με θόρυβο ή στο αυτοκίνητο.", "Hold a button while you talk, instead of an open microphone. Good with noise or in the car."), vm.settings.pushToTalk) { vm.settings.pushToTalk = it }
+            SwitchRow(t("Πρόσωπο στον κύκλο", "Face in the circle"), t("Μάτια και στόμα που κουνιέται με τη φωνή.", "Eyes and a mouth that moves with the voice."), vm.settings.face) { vm.settings.face = it }
+            SwitchRow(t("Ήχοι χαρακτήρων", "Character sounds"), t("Κόρνα για τον ταξιτζή, σφυρίχτρα για τον Λοχία, γήπεδο για τον οπαδό… όταν ξεκινά το Live.", "A horn for the taxi driver, a whistle for the sergeant, a stadium for the fan… when Live starts."), vm.settings.sounds) { vm.settings.sounds = it }
             SwitchRow(t("Η οθόνη μένει ανοιχτή στο Live", "Keep the screen on during Live"), t("Αλλιώς σβήνει κανονικά και η κουβέντα συνεχίζει με ειδοποίηση.", "Otherwise it turns off as usual and the conversation goes on with a notification."), vm.settings.keepScreenOn) { vm.settings.keepScreenOn = it }
         }
         Panel {
@@ -243,9 +254,14 @@ fun SettingsScreen(vm: ChatViewModel, onBack: () -> Unit, onKey: () -> Unit, onC
             }
         }
         Panel {
-            Label(t("Ο ΔΙΚΟΣ ΣΟΥ ΧΑΡΑΚΤΗΡΑΣ", "YOUR OWN CHARACTER"))
-            Text(vm.settings.custom()?.name ?: t("Δεν τον έχεις φτιάξει ακόμα.", "You haven't made it yet."), color = C.muted, fontSize = 13.sp)
-            TextButton(onCustom) { Text(if (vm.settings.custom() == null) t("Φτιάξε τον", "Make it") else t("Άλλαξέ τον", "Change it"), color = accent) }
+            Label(t("ΟΙ ΔΙΚΟΙ ΣΟΥ ΧΑΡΑΚΤΗΡΕΣ", "YOUR OWN CHARACTERS"))
+            Characters.CUSTOM_SLOTS.forEach { slot ->
+                val own = vm.settings.custom(slot)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(own?.label ?: t("Custom $slot: κενός", "Custom $slot: empty"), color = if (own == null) C.dim else C.text, fontSize = 13.5.sp, modifier = Modifier.weight(1f))
+                    TextButton({ onCustom(slot) }) { Text(if (own == null) t("Φτιάξε", "Make") else t("Άλλαξε", "Change"), color = accent) }
+                }
+            }
         }
         Panel {
             Label(t("ΚΟΥΒΕΝΤΕΣ", "CONVERSATIONS"))
@@ -307,46 +323,7 @@ fun SettingsScreen(vm: ChatViewModel, onBack: () -> Unit, onKey: () -> Unit, onC
 /** Greek capitals never carry accents. */
 fun String.noAccents(): String = java.text.Normalizer.normalize(this, java.text.Normalizer.Form.NFD).replace(Regex("\\p{Mn}+"), "")
 
-private val swatches = listOf(0xFFFFB020, 0xFFFF3B3B, 0xFFFF5FA2, 0xFF3DDC84, 0xFF4DA3FF, 0xFFA66BFF, 0xFF22D3EE, 0xFFF5F5F5)
-
-@Composable
-fun CustomScreen(vm: ChatViewModel, onBack: () -> Unit) {
-    val s = vm.settings
-    var name by remember { mutableStateOf(s.customName) }
-    var desc by remember { mutableStateOf(s.customDescription) }
-    var color by remember { mutableStateOf(s.customColor) }
-    var gender by remember { mutableStateOf(s.gender(Characters.custom("", "", 0, Gender.MALE))) }
-    val accent = Color(color)
-    Screen(t("Ο δικός σου χαρακτήρας", "Your own character"), onBack) {
-        OutlinedTextField(name, { name = it.take(40) }, Modifier.fillMaxWidth(), singleLine = true, label = { Text(t("Όνομα, π.χ. Ο θείος Τάκης", "Name, e.g. Uncle Takis")) })
-        OutlinedTextField(
-            desc, { desc = it.take(600) }, Modifier.fillMaxWidth().heightIn(min = 140.dp),
-            label = { Text(t("Πώς μιλάει και τι κάνει", "How it talks and what it does")) },
-            supportingText = { Text(t("${desc.length}/600 · π.χ. «Τα ξέρει όλα, έχει άποψη για όλα, κάθε κουβέντα τη γυρίζει στο ποδόσφαιρο».", "${desc.length}/600 · e.g. “Knows it all, has an opinion on everything, turns every conversation to football”.")) },
-        )
-        Panel {
-            Label(t("ΦΩΝΗ", "VOICE"))
-            Segmented(listOf(Gender.MALE, Gender.FEMALE), gender, { if (it == Gender.MALE) t("Ανδρική", "Male") else t("Γυναικεία", "Female") }, accent, { gender = it })
-            Spacer(Modifier.height(12.dp))
-            Label(t("ΧΡΩΜΑ", "COLOUR"))
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                swatches.forEach { sw ->
-                    Box(
-                        Modifier.size(32.dp).clip(CircleShape).background(Color(sw))
-                            .border(2.dp, if (sw == color) Color.White else Color.Transparent, CircleShape)
-                            .clickable(role = Role.RadioButton) { color = sw }
-                            .semantics { selected = sw == color; contentDescription = t("Χρώμα", "Colour") },
-                    )
-                }
-            }
-        }
-        Text(t("Ισχύουν οι ίδιοι κανόνες ασφάλειας με όλους τους χαρακτήρες: χωρίς σεξουαλικό περιεχόμενο, χωρίς μίσος, χωρίς ενθάρρυνση βίας.", "The same safety rules apply as for every character: no sexual content, no hate, no encouragement of violence."), color = C.dim, fontSize = 12.sp)
-        PrimaryButton(t("Αποθήκευση", "Save"), {
-            s.customName = name; s.customDescription = desc; s.customColor = color; s.setGender(Characters.CUSTOM_ID, gender)
-            s.custom()?.let { vm.pick(it) }; onBack()
-        }, enabled = desc.isNotBlank())
-    }
-}
+internal val swatches = listOf(0xFFFFB020, 0xFFFF3B3B, 0xFFFF5FA2, 0xFF3DDC84, 0xFF4DA3FF, 0xFFA66BFF, 0xFF22D3EE, 0xFFF5F5F5)
 
 @Composable
 fun KeyScreen(vm: ChatViewModel, onBack: () -> Unit) {
@@ -376,7 +353,8 @@ object Privacy {
         t("Δεν κρατάμε τίποτα", "We keep nothing") to t("Το Binelik AI δεν έχει δικό του server. Δεν υπάρχει λογαριασμός, εγγραφή, διαφημίσεις, analytics ή trackers. Ο δημιουργός δεν βλέπει τίποτα από όσα γράφεις.", "Binelik AI has no server of its own. There is no account, sign-up, ads, analytics or trackers. The maker sees nothing of what you write."),
         t("Οι κουβέντες σου", "Your conversations") to t("Μένουν μόνο στο κινητό σου. Δεν μπαίνουν ούτε στο αντίγραφο ασφαλείας του Android. Τις σβήνεις από τις Ρυθμίσεις, ή απεγκαθιστώντας την εφαρμογή.", "They stay on your phone only. They're not even in Android's backup. You delete them in the Settings, or by uninstalling the app."),
         t("Το κλειδί σου", "Your key") to t("Μένει κρυπτογραφημένο στο κινητό σου (Android Keystore) και στέλνεται μόνο στην υπηρεσία που ανήκει.", "It stays encrypted on your phone (Android Keystore) and is sent only to the service it belongs to."),
-        t("Τι στέλνεται και πού", "What is sent, and where") to t("Ό,τι γράφεις στέλνεται απευθείας από το κινητό σου στην υπηρεσία AI που διάλεξες, με το δικό σου κλειδί, και εκεί ισχύει η δική της πολιτική:\n• Google Gemini: με δωρεάν κλειδί, η Google μπορεί να χρησιμοποιεί τις κουβέντες για να βελτιώνει τα προϊόντα της και μπορεί να τις διαβάσουν άνθρωποι· με billing, όχι.\n• DeepSeek: οι κουβέντες πάνε στους servers του, στην Κίνα.", "What you write is sent straight from your phone to the AI service you chose, with your own key, and its own policy applies there:\n• Google Gemini: with a free key, Google may use the conversations to improve its products and people may read them; with billing, not.\n• DeepSeek: the conversations go to its servers, in China."),
+        t("Τι στέλνεται και πού", "What is sent, and where") to t("Ό,τι γράφεις στέλνεται απευθείας από το κινητό σου στην υπηρεσία AI που διάλεξες, με το δικό σου κλειδί, και εκεί ισχύει η δική της πολιτική:\n• Google Gemini: με δωρεάν κλειδί, η Google μπορεί να χρησιμοποιεί τις κουβέντες για να βελτιώνει τα προϊόντα της και μπορεί να τις διαβάσουν άνθρωποι· με billing, όχι.\n• DeepSeek: οι κουβέντες πάνε στους servers του, στην Κίνα.\n• Groq: στους servers του, στις ΗΠΑ.\n• OpenRouter: στο OpenRouter (ΗΠΑ) και από εκεί στην εταιρεία του μοντέλου· κάποια δωρεάν μοντέλα κρατούν τις κουβέντες για εκπαίδευση.", "What you write is sent straight from your phone to the AI service you chose, with your own key, and its own policy applies there:\n• Google Gemini: with a free key, Google may use the conversations to improve its products and people may read them; with billing, not.\n• DeepSeek: the conversations go to its servers, in China.\n• Groq: to its servers, in the USA.\n• OpenRouter: to OpenRouter (USA) and from there to the model's company; some free models keep conversations for training."),
+        t("Παιχνίδια", "Games") to t("Το ουρλιαχτόμετρο μετράει μόνο την ένταση, στο κινητό· ήχος δεν γράφεται. Το «Κάψ' το» δεν αποθηκεύει τίποτα. Κόντρα, πρόβα και ομαδική κουβέντα πηγαίνουν στο AI σου όπως η κουβέντα, χωρίς ιστορικό. Τα «Περισσότεροι χαρακτήρες» κατεβαίνουν από το GitHub μόνο όταν ανοίγεις τη σελίδα. Ένας δικός σου χαρακτήρας με QR ή link είναι όλος μέσα στο link, χωρίς server.", "The scream meter only measures loudness, on the phone; no audio is recorded. «Burn it» saves nothing. Battle, rehearsal and group chat go to your AI like the chat, without history. «More characters» are downloaded from GitHub only when you open that page. Your own character shared by QR or link is all inside the link, no server."),
         t("Ο έλεγχος ασφάλειας", "The safety check") to t("Ο έλεγχος για αυτοκτονία και για πραγματική πρόθεση βίας γίνεται στο κινητό σου και δεν στέλνεται πουθενά. Όταν πιάνει κάτι, το μήνυμα δεν πηγαίνει στο AI.", "The check for suicide and for real intent of violence runs on your phone and isn't sent anywhere. When it catches something, the message doesn't go to the AI."),
         t("Φωνή και μικρόφωνο", "Voice and microphone") to t("Το μικρόφωνο ζητιέται μόνο όταν πατήσεις Play. Με το Gemini, η φωνή σου στέλνεται ζωντανά μόνο στο Google Gemini, με το δικό σου κλειδί. Με το DeepSeek, τη φωνή σου την ακούει η αναγνώριση ομιλίας του κινητού σου (συνήθως της Google) και στο DeepSeek πηγαίνει μόνο το κείμενο. Ήχος δεν γράφεται πουθενά· κρατιέται μόνο το κείμενο της κουβέντας. Όσο μιλάτε, μια ειδοποίηση δείχνει ότι το μικρόφωνο είναι ανοιχτό, με κουμπί Παύση.", "The microphone is asked for only when you press Play. With Gemini, your voice is streamed only to Google Gemini, with your own key. With DeepSeek, your phone's speech recognition (usually Google's) hears your voice and only the text goes to DeepSeek. No audio is recorded anywhere; only the text of the conversation is kept. While you talk, a notification shows the microphone is on, with a Pause button."),
         t("Έλεγχος για νέα έκδοση", "New version check") to t("Αν το αφήσεις ανοιχτό (Ρυθμίσεις), η εφαρμογή ρωτά το GitHub, το πολύ κάθε 6 ώρες, ποια είναι η τελευταία έκδοση. Το GitHub βλέπει μόνο ότι έγινε ένα αίτημα (και τη διεύθυνση IP, όπως κάθε site). Τίποτα από τις κουβέντες ή το κλειδί σου.", "If you leave it on (Settings), the app asks GitHub, at most every 6 hours, which is the latest version. GitHub sees only that a request was made (and the IP address, like any site). Nothing of your conversations or key."),

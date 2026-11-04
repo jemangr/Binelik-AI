@@ -27,12 +27,19 @@ data class Stats(
     /** Days in a row with at least one message, up to today. */
     val streak: Int,
     val badges: List<Badge>,
+    /** The anger calendar: the last 35 days, average anger before Live (null: no reading). */
+    val calendar: List<Pair<LocalDate, Double?>> = emptyList(),
+    /** The day of the week the user is angriest (1 = Monday), with its average, from at least 3 readings. */
+    val angriestDay: Pair<Int, Double>? = null,
 )
 
 object StatsCalc {
     private const val DAY = 24 * 60 * 60 * 1000L
 
-    fun compute(all: List<Message>, anger: List<Anger>, now: Long = System.currentTimeMillis(), zone: ZoneId = ZoneId.systemDefault()): Stats {
+    /** The 1.2 game counters, from the settings (scream record, plates, battles won, burns, rehearsals). */
+    data class Games(val scream: Int = 0, val plates: Int = 0, val battlesWon: Int = 0, val burns: Int = 0, val rehearsals: Int = 0)
+
+    fun compute(all: List<Message>, anger: List<Anger>, now: Long = System.currentTimeMillis(), zone: ZoneId = ZoneId.systemDefault(), games: Games = Games()): Stats {
         fun day(ms: Long) = Instant.ofEpochMilli(ms).atZone(zone).toLocalDate()
         val today = day(now)
         val mine = all.filter { it.fromUser && !it.pause }
@@ -65,7 +72,18 @@ object StatsCalc {
             Badge("🥊", t("Καβγατζής του μήνα", "Brawler of the month"), t("50 μηνύματα στον Καβγατζή σε 30 μέρες", "50 messages to the Brawler in 30 days"), month.count { it.character == "kavgatzis" } >= 50),
             Badge("🕊️", t("Ειρηνοποιός", "Peacemaker"), t("20 μηνύματα στον Υπομονετικό ή στον Ψυχαναλυτή", "20 messages to the Patient one or the Shrink"), (byCharacter["ypomonetikos"] ?: 0) + (byCharacter["psychanalytis"] ?: 0) >= 20),
         )
-        return Stats(swearsToday, swearsWeek, swearsTotal, week.size, topWord, topCharacter, drop, weekAnger, streak, badges)
+        val more = badges + listOf(
+            Badge("🗣️", t("Λαρύγγι", "Big lungs"), t("90+ στο ουρλιαχτόμετρο", "90+ on the scream meter"), games.scream >= 90),
+            Badge("🏺", t("Ζορμπάς", "Zorba"), t("100 σπασμένα πιάτα", "100 smashed plates"), games.plates >= 100),
+            Badge("🎤", t("Βασιλιάς της κόντρας", "Battle king"), t("Κέρδισες μια κόντρα βρισιών", "Win an insult battle"), games.battlesWon >= 1),
+            Badge("🔥", t("Πυρομανής", "Pyromaniac"), t("Έκαψες 10 κείμενα", "Burn 10 texts"), games.burns >= 10),
+            Badge("🎭", t("Έτοιμος για όλα", "Ready for anything"), t("Έκανες 3 πρόβες", "Do 3 rehearsals"), games.rehearsals >= 3),
+        )
+        val byDay = anger.groupBy { day(it.time) }.mapValues { (_, l) -> l.map { it.before.toDouble() }.average() }
+        val calendar = (34 downTo 0).map { k -> today.minusDays(k.toLong()).let { it to byDay[it] } }
+        val angriest = anger.groupBy { day(it.time).dayOfWeek.value }.filter { it.value.size >= 3 }
+            .mapValues { (_, l) -> l.map { it.before.toDouble() }.average() }.maxByOrNull { it.value }?.toPair()
+        return Stats(swearsToday, swearsWeek, swearsTotal, week.size, topWord, topCharacter, drop, weekAnger, streak, more, calendar, angriest)
     }
 
     fun longestRun(days: Set<LocalDate>): Int {

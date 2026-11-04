@@ -1,6 +1,7 @@
 package app.binelik.voice
 
 import app.binelik.extras.Report
+import app.binelik.extras.SoundFx
 import android.app.Application
 import android.content.Context
 import android.content.Intent
@@ -100,6 +101,9 @@ object Engine {
         val g = settings.gender(c)
         error.value = null
         state.value = LiveState.CONNECTING
+        talked = true
+        if (settings.pushToTalk) micMuted.value = true
+        if (settings.sounds) SoundFx.play(c.id)
         scope.launch {
             val dao = Db.get(app).messages()
             val recent = dao.forCharacter(c.id).first().filter { !it.pause }.map { it.fromUser to it.text }
@@ -159,6 +163,16 @@ object Engine {
 
     /** Tap while it speaks: it stops and listens (the phone's voice; Gemini Live stops by itself when you talk). */
     fun interrupt() { conv?.interrupt() }
+
+    /** Push to talk: pressed (true) or let go (false). */
+    fun hold(talking: Boolean) {
+        micMuted.value = !talking
+        conv?.let { if (talking) it.micMuted = false else it.release() }
+        version.value++
+    }
+
+    /** A voice conversation took place since the app opened (for «Calm down» after the pause). */
+    var talked = false
 
     fun toggleMic() { micMuted.value = !micMuted.value; conv?.micMuted = micMuted.value; version.value++ }
     fun toggleVoice() { voiceMuted.value = !voiceMuted.value; conv?.voiceMuted = voiceMuted.value; version.value++ }

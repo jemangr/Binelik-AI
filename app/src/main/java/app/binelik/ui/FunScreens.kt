@@ -60,7 +60,17 @@ fun FunScreen(vm: ChatViewModel, onBack: () -> Unit, onOpen: (String) -> Unit) {
         FunCard("✉️", t("Το email που δεν θα στείλεις", "The email you won't send"), t("Ο χαρακτήρας γράφει το θυμωμένο· με ένα κουμπί, το ευγενικό", "The character writes the angry one; one tap, the polite one")) { onOpen("email") }
         FunCard("🔥", t("Ψήσε με", "Roast me"), t("Ο χαρακτήρας σε κράζει με όσα του έχεις πει", "The character roasts you with what you told it")) { vm.roast(); onOpen("chat") }
         FunCard("🎲", t("Ζάρι", "Dice"), t("Τυχαίος χαρακτήρας, τυχαία ένταση", "Random character, random intensity")) { vm.dice(); onOpen("home") }
-        FunCard("📊", t("Μπινελικόμετρο, θυμόμετρο, βραβεία", "Swear meter, anger meter, badges"), t("Τα στατιστικά σου, μόνο στο κινητό", "Your statistics, only on the phone")) { onOpen("stats") }
+        Hud(t("ΞΕΣΠΑΣΜΑ", "LET IT OUT"))
+        FunCard("🗣️", t("Ουρλιαχτόμετρο", "Scream meter"), t("Φώναξε όσο πιο δυνατά μπορείς: βαθμός και ρεκόρ", "Scream as loud as you can: score and record")) { onOpen("scream") }
+        FunCard("🍽️", t("Σπάσε πιάτα", "Smash plates"), t("Πάτα ή κούνα το κινητό. Όπα!", "Tap or shake the phone. Opa!")) { onOpen("plates") }
+        FunCard("🔥", t("Γράψ' το και κάψ' το", "Write it and burn it"), t("Ό,τι σε τρώει, καίγεται και σβήνεται για πάντα", "Whatever is eating you burns and is gone forever")) { onOpen("burn") }
+        FunCard("🎤", t("Κόντρα βρισιών", "Insult battle"), t("3 γύροι, το AI βαθμολογεί την εξυπνάδα", "3 rounds, the AI scores the wit")) { onOpen("battle") }
+        Hud(t("ΧΡΗΣΙΜΑ", "USEFUL"))
+        FunCard("🎭", t("Πρόβα δύσκολης κουβέντας", "Rehearse a hard talk"), t("Αύξηση, «πρέπει να μιλήσουμε»…, με συμβουλές στο τέλος", "A raise, “we need to talk”…, with tips at the end")) { onOpen("rehearsal") }
+        FunCard("🌬️", t("Ήρεμο κλείσιμο", "Calm down"), t("Ένα λεπτό αναπνοές με φωνή", "One minute of breathing, with voice")) { onOpen("breathe") }
+        FunCard("👥", t("Ομαδική κουβέντα", "Group chat"), t("Δύο χαρακτήρες μαζί, με δύο φωνές", "Two characters at once, with two voices")) { onOpen("group") }
+        FunCard("📦", t("Περισσότεροι χαρακτήρες", "More characters"), t("Νέοι χαρακτήρες από το GitHub, χωρίς νέα έκδοση", "New characters from GitHub, without a new version")) { onOpen("packs") }
+        FunCard("📊", t("Μπινελικόμετρο, θυμόμετρο, βραβεία", "Swear meter, anger meter, badges"), t("Τα στατιστικά σου και το ημερολόγιο θυμού, μόνο στο κινητό", "Your statistics and anger calendar, only on the phone")) { onOpen("stats") }
     }
 }
 
@@ -92,7 +102,7 @@ private fun CharacterChips(selected: Character?, onPick: (Character) -> Unit, ex
                     .clickable(role = Role.RadioButton) { onPick(c) }.semantics { this.selected = on }
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
-            ) { Dot(k, 10); Spacer(Modifier.width(6.dp)); Text(c.name, fontSize = 13.sp, fontWeight = FontWeight.SemiBold) }
+            ) { Dot(k, 10); Spacer(Modifier.width(6.dp)); Text(c.label, fontSize = 13.sp, fontWeight = FontWeight.SemiBold) }
         }
     }
 }
@@ -205,6 +215,24 @@ fun StatsScreen(vm: ChatViewModel, onBack: () -> Unit) {
                     }
                 }
                 Text(t("Κόκκινο: πριν · Πράσινο: μετά", "Red: before · Green: after"), color = C.dim, fontSize = 11.sp)
+            }
+        }
+        Panel {
+            Hud(t("ΗΜΕΡΟΛΟΓΙΟ ΘΥΜΟΥ", "ANGER CALENDAR"))
+            Text(t("Οι τελευταίες 5 εβδομάδες, από το θυμόμετρο πριν το Live.", "The last 5 weeks, from the anger meter before Live."), color = C.dim, fontSize = 12.sp, modifier = Modifier.padding(vertical = 6.dp))
+            s.calendar.chunked(7).forEach { week ->
+                Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    week.forEach { (d, v) ->
+                        val col = when { v == null -> C.panel2; v >= 7 -> C.danger; v >= 4 -> C.amber; else -> C.ok }
+                        Box(Modifier.weight(1f).height(30.dp).clip(RoundedCornerShape(6.dp)).background(col), contentAlignment = Alignment.Center) {
+                            Text("${d.dayOfMonth}", fontSize = 10.sp, color = if (v == null) C.dim else Color.Black)
+                        }
+                    }
+                }
+            }
+            s.angriestDay?.let { (d, v) ->
+                val name = java.time.DayOfWeek.of(d).getDisplayName(java.time.format.TextStyle.FULL, if (app.binelik.i18n.Lang.en) java.util.Locale.ENGLISH else java.util.Locale.forLanguageTag("el"))
+                Text(t("Η πιο θυμωμένη σου μέρα: $name (%.1f)".format(v), "Your angriest day: $name (%.1f)".format(v)), color = C.amber, fontWeight = FontWeight.SemiBold, fontSize = 13.5.sp, modifier = Modifier.padding(top = 8.dp))
             }
         }
         Panel {

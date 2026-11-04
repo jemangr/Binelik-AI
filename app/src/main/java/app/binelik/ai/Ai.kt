@@ -26,9 +26,25 @@ enum class Provider(
     val keyPage: String,
     /** What a copied key looks like, for the automatic paste. */
     val keyPattern: Regex,
+    /** The default model (the OpenAI-compatible services: changeable in the settings, their lists change). */
+    val model: String = "",
+    /** OpenAI-compatible chat endpoint, for all but Gemini. */
+    val chatUrl: String = "",
+    /** The cheapest call that needs a valid key. */
+    val testUrl: String = "",
+    /** Free to use (with limits). */
+    val free: Boolean = false,
 ) {
-    GEMINI("Gemini", "https://aistudio.google.com/apikey", Regex("AIza[0-9A-Za-z_\\-]{30,45}")),
-    DEEPSEEK("DeepSeek", "https://platform.deepseek.com/api_keys", Regex("sk-[0-9A-Za-z]{20,64}")),
+    GEMINI("Gemini", "https://aistudio.google.com/apikey", Regex("AIza[0-9A-Za-z_\\-]{30,45}"), free = true,
+        testUrl = "https://generativelanguage.googleapis.com/v1beta/models?pageSize=1"),
+    DEEPSEEK("DeepSeek", "https://platform.deepseek.com/api_keys", Regex("sk-[0-9A-Za-z]{20,64}"), "deepseek-chat",
+        "https://api.deepseek.com/chat/completions", "https://api.deepseek.com/models"),
+    /** 1.2: free tier, very fast; gpt-oss thinks, so its effort is kept low. */
+    GROQ("Groq", "https://console.groq.com/keys", Regex("gsk_[0-9A-Za-z]{40,64}"), "openai/gpt-oss-120b",
+        "https://api.groq.com/openai/v1/chat/completions", "https://api.groq.com/openai/v1/models", free = true),
+    /** 1.2: many models, the «:free» ones without charge (the list changes every month). */
+    OPENROUTER("OpenRouter", "https://openrouter.ai/settings/keys", Regex("sk-or-v1-[0-9a-f]{64}"), "google/gemma-4-31b-it:free",
+        "https://openrouter.ai/api/v1/chat/completions", "https://openrouter.ai/api/v1/key", free = true),
     ;
 
     /** The key inside a copied text, if there is one (people often copy a space or a line too). */
@@ -46,7 +62,7 @@ sealed class AiResult {
 }
 
 /** [BUSY]: the service is overloaded or down for a moment (HTTP 500/503/504), not the user's fault. */
-enum class Reason { BAD_KEY, LIMIT, BLOCKED, NETWORK, BUSY, OTHER }
+enum class Reason { BAD_KEY, LIMIT, BLOCKED, NETWORK, BUSY, MODEL, OTHER }
 
 object Ai {
     const val GEMINI_MODEL = "gemini-flash-latest"
@@ -100,19 +116,28 @@ object Ai {
         })
     }
 
-    fun deepseekBody(system: String, turns: List<Turn>): JsonObject = buildJsonObject {
-        put("model", DEEPSEEK_MODEL)
+    fun deepseekBody(system: String, turns: List<Turn>): JsonObject = chatBody(Provider.DEEPSEEK, Provider.DEEPSEEK.model, system, turns)
+
+    /** The OpenAI-compatible body (DeepSeek, Groq, OpenRouter). */
+    fun chatBody(provider: Provider, model: String, system: String, turns: List<Turn>): JsonObject = buildJsonObject {
+        put("model", model)
         put("messages", buildJsonArray {
             add(buildJsonObject { put("role", "system"); put("content", system) })
             turns.takeLast(HISTORY).forEach { t ->
                 add(buildJsonObject { put("role", if (t.fromUser) "user" else "assistant"); put("content", t.text) })
             }
         })
-        put("temperature", 1.1)
-        put("max_tokens", 400)
-        // Less repetition of the same phrases from turn to turn.
-        put("frequency_penalty", 0.7)
-        put("presence_penalty", 0.5)
+        put("temperature", if (provider == Provider.DEEPSEEK) 1.1 else 1.0)
+        when (provider) {
+            // gpt-oss on Groq thinks first: little effort, and room for the thinking.
+            Provider.GROQ -> { put("max_tokens", 2048); if (model.startsWith("openai/gpt-oss")) put("reasoning_effort", "low") }
+            else -> {
+                put("max_tokens", if (provider == Provider.DEEPSEEK) 400 else 1200)
+                // Less repetition of the same phrases from turn to turn.
+                put("frequency_penalty", 0.7)
+                put("presence_penalty", 0.5)
+            }
+        }
     }
 
     /** The reply text in a Gemini answer, or why there is none. */
@@ -149,6 +174,8 @@ object Ai {
         402 -> Reason.LIMIT // DeepSeek: no balance left
         429 -> Reason.LIMIT
         500, 502, 503, 504 -> Reason.BUSY
+        // The model is gone (the free lists of Groq and OpenRouter change).
+        404 -> Reason.MODEL
         else -> Reason.OTHER
     }
 
@@ -199,10 +226,11 @@ object Ai {
                 .url("https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent")
                 .header("x-goog-api-key", key)
                 .post(geminiBody(system, turns, search, think).toString().toRequestBody(JSON_TYPE))
-            Provider.DEEPSEEK -> Request.Builder()
-                .url("https://api.deepseek.com/chat/completions")
+            else -> Request.Builder()
+                .url(provider.chatUrl)
                 .header("Authorization", "Bearer $key")
-                .post(deepseekBody(system, turns).toString().toRequestBody(JSON_TYPE))
+                .apply { if (provider == Provider.OPENROUTER) header("X-Title", "Binelik AI") }
+                .post(chatBody(provider, app.binelik.voice.Engine.settings.model(provider), system, turns).toString().toRequestBody(JSON_TYPE))
         }.build()
         try {
             http.newCall(req).execute().use { r ->
@@ -241,8 +269,8 @@ object Ai {
     /** Checks a key with the cheapest call there is (the list of models). */
     suspend fun testKey(provider: Provider, key: String): AiResult = withContext(Dispatchers.IO) {
         val req = when (provider) {
-            Provider.GEMINI -> Request.Builder().url("https://generativelanguage.googleapis.com/v1beta/models?pageSize=1").header("x-goog-api-key", key)
-            Provider.DEEPSEEK -> Request.Builder().url("https://api.deepseek.com/models").header("Authorization", "Bearer $key")
+            Provider.GEMINI -> Request.Builder().url(provider.testUrl).header("x-goog-api-key", key)
+            else -> Request.Builder().url(provider.testUrl).header("Authorization", "Bearer $key")
         }.get().build()
         try {
             http.newCall(req).execute().use { r -> if (r.isSuccessful) AiResult.Ok("") else AiResult.Fail(reasonFor(r.code), "HTTP ${r.code}") }

@@ -3,6 +3,7 @@ package app.binelik.ui
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import app.binelik.extras.Shortcuts
 import app.binelik.BuildConfig
 import app.binelik.ai.Ai
 import app.binelik.update.Installer
@@ -43,6 +44,15 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
 
     val character = MutableStateFlow(settings.character())
     val intensity = MutableStateFlow(settings.intensity(character.value.id))
+
+    init {
+        // The icon's shortcuts: Live with the three most used (or three classics, the first time).
+        viewModelScope.launch {
+            val ids = runCatching { dao.topCharacters() }.getOrDefault(emptyList())
+            val top = (ids + listOf("kavgatzis", "ypomonetikos", "taxitzis")).distinct().map { settings.character(it) }.distinctBy { it.id }
+            Shortcuts.update(getApplication(), top)
+        }
+    }
     val sending = MutableStateFlow(false)
     val error = MutableStateFlow<String?>(null)
     /** Shown over everything when the character steps out of its role for safety. */
@@ -118,7 +128,7 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
 
     /** The dice: a random character with a random intensity. */
     fun dice() {
-        val all = Characters.all + listOfNotNull(settings.custom())
+        val all = settings.everyone()
         val c = all.random()
         settings.setIntensity(c.id, Intensity.entries.random())
         pick(c)
@@ -191,7 +201,8 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
 
     fun loadStats() = viewModelScope.launch {
         val db = Db.get(getApplication())
-        stats.value = StatsCalc.compute(db.messages().since(0), db.anger().since(0))
+        val g = StatsCalc.Games(settings.best("scream"), settings.count("plates"), settings.count("battles_won"), settings.count("burns"), settings.count("rehearsals"))
+        stats.value = StatsCalc.compute(db.messages().since(0), db.anger().since(0), games = g)
     }
 
     /** The funny summary of the week: the user's own messages of the week go to the AI, only when asked. */
@@ -286,6 +297,7 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
             else t("Έφτασες το δωρεάν όριο του Gemini. Περίμενε λίγο ή δοκίμασε αύριο.", "You reached Gemini's free limit. Wait a little or try tomorrow.")
             Reason.BLOCKED -> t("Το ${p.label} δεν απάντησε σε αυτό (φίλτρο ασφαλείας του). Πες το αλλιώς.", "${p.label} didn't answer that (its safety filter). Say it another way.")
             Reason.NETWORK -> t("Δεν υπάρχει σύνδεση με το ${p.label} (το δίκτυο του κινητού). Δοκίμασε ξανά.", "No connection to ${p.label} (the phone's network). Try again.")
+            Reason.MODEL -> t("Το μοντέλο «${app.binelik.voice.Engine.settings.model(p)}» δεν υπάρχει πια στο ${p.label}. Άλλαξέ το από τις Ρυθμίσεις.", "The model “${app.binelik.voice.Engine.settings.model(p)}” no longer exists on ${p.label}. Change it in the Settings.")
             Reason.BUSY -> t("Το ${p.label} έχει φόρτο αυτή τη στιγμή (πρόβλημα της ίδιας της υπηρεσίας). Δοκίμασε σε λίγο.", "${p.label} is overloaded right now (a problem of the service itself). Try again in a moment.")
             Reason.OTHER -> t("Κάτι πήγε στραβά με το ${p.label}. Δοκίμασε ξανά.", "Something went wrong with ${p.label}. Try again.")
         }

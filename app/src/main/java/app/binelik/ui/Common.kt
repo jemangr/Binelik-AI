@@ -6,6 +6,7 @@ import android.net.Uri
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,6 +33,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import app.binelik.i18n.t
 
 fun openUrl(context: Context, url: String) {
     runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
@@ -88,4 +90,43 @@ fun Panel(modifier: Modifier = Modifier, padding: PaddingValues = PaddingValues(
 @Composable
 fun Dot(color: Color, size: Int = 12) {
     Box(Modifier.size(size.dp).clip(CircleShape).background(color))
+}
+
+/** The AI service: 2 × 2 (four don't fit in one row). */
+@androidx.compose.runtime.Composable
+fun ProviderPicker(selected: app.binelik.ai.Provider, accent: androidx.compose.ui.graphics.Color, onPick: (app.binelik.ai.Provider) -> Unit) {
+    androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+        app.binelik.ai.Provider.entries.chunked(2).forEach { row ->
+            androidx.compose.foundation.layout.Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                row.forEach { p ->
+                    val on = p == selected
+                    androidx.compose.foundation.layout.Column(
+                        Modifier.weight(1f).clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
+                            .background(if (on) accent.copy(alpha = 0.18f) else C.panel2)
+                            .border(1.dp, if (on) accent else C.line, androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
+                            .clickable(role = androidx.compose.ui.semantics.Role.RadioButton) { onPick(p) }
+                            .padding(horizontal = 12.dp, vertical = 9.dp),
+                    ) {
+                        Text(p.label, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, fontSize = 14.sp, color = if (on) accent else C.text)
+                        Text(providerNote(p), color = C.muted, fontSize = 11.sp)
+                    }
+                }
+            }
+        }
+    }
+}
+
+fun providerNote(p: app.binelik.ai.Provider): String = when (p) {
+    app.binelik.ai.Provider.GEMINI -> t("Δωρεάν · Live με φωνή", "Free · Live voice")
+    app.binelik.ai.Provider.DEEPSEEK -> t("Με υπόλοιπο · φωνή κινητού", "Paid · phone voice")
+    app.binelik.ai.Provider.GROQ -> t("Δωρεάν · πολύ γρήγορο", "Free · very fast")
+    app.binelik.ai.Provider.OPENROUTER -> t("Δωρεάν μοντέλα «:free»", "Free “:free” models")
+}
+
+/** Where the key is made, by name. */
+fun keySite(p: app.binelik.ai.Provider): String = when (p) {
+    app.binelik.ai.Provider.GEMINI -> "Google AI Studio"
+    app.binelik.ai.Provider.DEEPSEEK -> "DeepSeek Platform"
+    app.binelik.ai.Provider.GROQ -> "GroqCloud"
+    app.binelik.ai.Provider.OPENROUTER -> "OpenRouter"
 }

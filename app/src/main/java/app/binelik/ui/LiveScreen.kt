@@ -58,6 +58,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -69,7 +71,7 @@ import app.binelik.voice.LiveState
 /** The Live home: the voice circle, Pause/Play in the middle, the two Mutes beside it. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LiveScreen(vm: ChatViewModel, onChat: () -> Unit, onSettings: () -> Unit, onCustom: () -> Unit, onFun: () -> Unit = {}, autoPlay: Boolean = false) {
+fun LiveScreen(vm: ChatViewModel, onChat: () -> Unit, onSettings: () -> Unit, onCustom: (Int) -> Unit, onFun: () -> Unit = {}, autoPlay: Boolean = false, onCalm: () -> Unit = {}) {
     val context = LocalContext.current
     val c by vm.character.collectAsState()
     val intensity by vm.intensity.collectAsState()
@@ -146,7 +148,18 @@ fun LiveScreen(vm: ChatViewModel, onChat: () -> Unit, onSettings: () -> Unit, on
             // Tap the circle while it speaks to stop it and talk (needed with the phone's voice).
             Box(Modifier.clip(CircleShape).clickable(enabled = state == LiveState.SPEAKING, role = Role.Button) { app.binelik.voice.Engine.interrupt() }
                 .semantics { contentDescription = t("Διακοπή του χαρακτήρα", "Interrupt the character") }) {
-                Orb(accent, 250.dp, active = on && !(state == LiveState.LISTENING && mic))
+                // The face: its mouth follows the voice (Gemini's sound level; the phone voice, a simple movement).
+                var mouth by remember { mutableStateOf(0f) }
+                androidx.compose.runtime.LaunchedEffect(state) {
+                    val start = System.currentTimeMillis()
+                    while (state == LiveState.SPEAKING) {
+                        val lv = app.binelik.ai.Speaker.levelNow()
+                        mouth = if (lv > 0f) lv else if (!vm.settings.provider.let { it == app.binelik.ai.Provider.GEMINI }) (0.25f + 0.35f * kotlin.math.abs(kotlin.math.sin((System.currentTimeMillis() - start) / 90.0)).toFloat()) else 0f
+                        kotlinx.coroutines.delay(40)
+                    }
+                    mouth = 0f
+                }
+                Orb(accent, 250.dp, active = on && !(state == LiveState.LISTENING && mic), face = vm.settings.face, mouth = mouth)
             }
         }
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -158,7 +171,7 @@ fun LiveScreen(vm: ChatViewModel, onChat: () -> Unit, onSettings: () -> Unit, on
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Dot(accent); Spacer(Modifier.width(8.dp))
-                Text(c.name, color = accent, fontWeight = FontWeight.ExtraBold, fontSize = 19.sp)
+                Text(c.label, color = accent, fontWeight = FontWeight.ExtraBold, fontSize = 19.sp)
                 Spacer(Modifier.width(8.dp)); Text(t("Αλλαγή ▾", "Change ▾"), color = C.muted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
             }
             Text(
@@ -173,7 +186,8 @@ fun LiveScreen(vm: ChatViewModel, onChat: () -> Unit, onSettings: () -> Unit, on
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp).heightIn(min = 44.dp),
             )
             Segmented(Intensity.entries, intensity, { it.label }, accent, vm::setIntensity, Modifier.padding(horizontal = 48.dp))
-            val banner = listOfNotNull(if (mic) t("Δεν σε ακούει (μικρόφωνο κλειστό)", "Not listening (microphone off)") else null, if (voice) t("Δεν τον ακούς (φωνή AI σε σίγαση)", "You can't hear it (AI voice muted)") else null).joinToString(" · ")
+            val ptt = vm.settings.pushToTalk
+            val banner = listOfNotNull(if (mic && !ptt) t("Δεν σε ακούει (μικρόφωνο κλειστό)", "Not listening (microphone off)") else null, if (voice) t("Δεν τον ακούς (φωνή AI σε σίγαση)", "You can't hear it (AI voice muted)") else null).joinToString(" · ")
             (err ?: banner.ifEmpty { null })?.let {
                 Text(
                     it, color = Color(0xFFFFB3B3), fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center,
@@ -184,6 +198,20 @@ fun LiveScreen(vm: ChatViewModel, onChat: () -> Unit, onSettings: () -> Unit, on
             }
         }
         Spacer(Modifier.weight(1f))
+        // Push to talk (Settings): hold to speak, let go and it answers.
+        if (vm.settings.pushToTalk && on) Box(
+            Modifier.padding(horizontal = 24.dp, vertical = 10.dp).fillMaxWidth().height(64.dp).clip(RoundedCornerShape(32.dp))
+                .background(if (!mic) accent else C.panel2).border(2.dp, accent, RoundedCornerShape(32.dp))
+                .pointerInput(Unit) { detectTapGestures(onPress = { app.binelik.voice.Engine.hold(true); tryAwaitRelease(); app.binelik.voice.Engine.hold(false) }) }
+                .semantics { contentDescription = t("Κράτα πατημένο για να μιλήσεις", "Hold to talk") },
+            contentAlignment = Alignment.Center,
+        ) { Text(if (!mic) t("🎙️ ΣΕ ΑΚΟΥΕΙ… άφησε για απάντηση", "🎙️ LISTENING… let go for the answer") else t("🎙️ Κράτα για να μιλήσεις", "🎙️ Hold to talk"), color = if (!mic) Color.Black else C.text, fontWeight = FontWeight.Bold) }
+        // After a pause: a minute of breathing.
+        if (!on && app.binelik.voice.Engine.talked) Text(
+            t("🌬️ Ηρέμησε 1 λεπτό", "🌬️ Calm down for 1 minute"), color = Color(0xFF7DD3FC), fontWeight = FontWeight.SemiBold, fontSize = 14.sp,
+            modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 10.dp).clip(RoundedCornerShape(50)).border(1.dp, Color(0xFF7DD3FC).copy(alpha = 0.5f), RoundedCornerShape(50))
+                .clickable(role = Role.Button, onClick = onCalm).padding(horizontal = 16.dp, vertical = 8.dp),
+        )
         Row(Modifier.fillMaxWidth().padding(bottom = 26.dp), horizontalArrangement = Arrangement.spacedBy(26.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
             MuteButton(mic, if (mic) Icons.Default.MicOff else Icons.Default.Mic, if (mic) t("Κλειστό", "Off") else t("Μικρόφωνο", "Microphone"), t("Μικρόφωνο", "Microphone"), vm::toggleMic)
             Box(
@@ -199,7 +227,7 @@ fun LiveScreen(vm: ChatViewModel, onChat: () -> Unit, onSettings: () -> Unit, on
 
     if (sheet) ModalBottomSheet({ sheet = false }, containerColor = Color(0xFF0A1018)) {
         Text(t("Με ποιον θα τα πεις;", "Who do you want to talk to?"), fontWeight = FontWeight.ExtraBold, fontSize = 17.sp, modifier = Modifier.padding(horizontal = 18.dp, vertical = 4.dp))
-        CharacterList(vm, Modifier.heightIn(max = 560.dp), onCustom = { sheet = false; onCustom() }) { vm.pick(it); sheet = false }
+        CharacterList(vm, Modifier.heightIn(max = 560.dp), onCustom = { sheet = false; onCustom(it) }) { vm.pick(it); sheet = false }
     }
     if (pause) SafetyDialog { vm.pause.value = false }
     anger?.let { before ->

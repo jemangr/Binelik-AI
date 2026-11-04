@@ -81,7 +81,7 @@ class Settings(context: Context) {
 
     /** Male or female voice per character (used by the Live voice in 0.2). */
     fun gender(c: Character): Gender = genderOf(c.id, c.gender)
-    private fun genderOf(id: String, default: Gender): Gender =
+    fun genderOf(id: String, default: Gender): Gender =
         runCatching { Gender.valueOf(p.getString("g_$id", null) ?: "") }.getOrDefault(default)
     fun setGender(id: String, g: Gender) = p.edit().putString("g_$id", g.name).remove("v_$id").apply()
 
@@ -118,6 +118,33 @@ class Settings(context: Context) {
         get() = p.getBoolean("bleep", false)
         set(v) = p.edit().putBoolean("bleep", v).apply()
     fun style() = Style(region, bleep, city)
+
+    // ---- 1.2 ----
+    /** Hold a button to talk, instead of an open microphone (noise, the car). */
+    var pushToTalk: Boolean
+        get() = p.getBoolean("ptt", false)
+        set(v) = p.edit().putBoolean("ptt", v).apply()
+    /** A face in the voice circle, with a mouth that moves with the voice. */
+    var face: Boolean
+        get() = p.getBoolean("face", true)
+        set(v) = p.edit().putBoolean("face", v).apply()
+    /** A sound per character when Live starts (horn, whistle, stadium…). */
+    var sounds: Boolean
+        get() = p.getBoolean("sounds", true)
+        set(v) = p.edit().putBoolean("sounds", v).apply()
+    /** The voice in «Calm down» (phone voice); off: only the circle. */
+    var breatheVoice: Boolean
+        get() = p.getBoolean("breathe_voice", true)
+        set(v) = p.edit().putBoolean("breathe_voice", v).apply()
+    /** Models for the OpenAI-compatible services (they change often, so the user can change them). */
+    fun model(provider: app.binelik.ai.Provider): String = p.getString("model_${provider.name}", null)?.ifBlank { null } ?: provider.model
+    fun setModel(provider: app.binelik.ai.Provider, m: String) = p.edit().putString("model_${provider.name}", m.trim().take(100)).apply()
+
+    /** Counters and records for the games and the badges (only on the phone). */
+    fun count(k: String): Int = p.getInt("n_$k", 0)
+    fun add(k: String, n: Int = 1) = p.edit().putInt("n_$k", count(k) + n).apply()
+    fun best(k: String): Int = p.getInt("best_$k", 0)
+    fun record(k: String, v: Int): Boolean = (v > best(k)).also { if (it) p.edit().putInt("best_$k", v).apply() }
 
     /** Anger meter before and after a voice conversation. */
     var angerMeter: Boolean
@@ -186,22 +213,31 @@ class Settings(context: Context) {
         get() = p.getBoolean("en", java.util.Locale.getDefault().language != "el")
         set(v) = p.edit().putBoolean("en", v).apply()
 
-    var customName: String
-        get() = p.getString("c_name", null) ?: ""
-        set(v) = p.edit().putString("c_name", v.take(40)).apply()
-    var customDescription: String
-        get() = p.getString("c_desc", null) ?: ""
-        set(v) = p.edit().putString("c_desc", v.take(600)).apply()
-    var customColor: Long
-        get() = p.getLong("c_color", 0xFFFFB020)
-        set(v) = p.edit().putLong("c_color", v).apply()
+    private fun ck(slot: Int, k: String) = if (slot == 1) "c_$k" else "c${slot}_$k"
+    fun customName(slot: Int = 1): String = p.getString(ck(slot, "name"), null) ?: ""
+    fun customDescription(slot: Int = 1): String = p.getString(ck(slot, "desc"), null) ?: ""
+    fun customColor(slot: Int = 1): Long = p.getLong(ck(slot, "color"), if (slot == 1) 0xFFFFB020 else 0xFF4DA3FF)
+    fun setCustom(slot: Int, name: String, description: String, color: Long) =
+        p.edit().putString(ck(slot, "name"), name.take(40)).putString(ck(slot, "desc"), description.take(600)).putLong(ck(slot, "color"), color).apply()
+    fun deleteCustom(slot: Int) = p.edit().remove(ck(slot, "name")).remove(ck(slot, "desc")).remove(ck(slot, "color")).apply()
 
-    fun custom(): Character? =
-        if (customDescription.isBlank()) null
-        else Characters.custom(customName, customDescription, customColor, genderOf(Characters.CUSTOM_ID, Gender.MALE))
+    fun custom(slot: Int = 1): Character? =
+        if (customDescription(slot).isBlank()) null
+        else Characters.custom(customName(slot), customDescription(slot), customColor(slot), genderOf(Characters.customId(slot), Gender.MALE), slot)
+
+    fun customs(): List<Character> = Characters.CUSTOM_SLOTS.mapNotNull { custom(it) }
+
+    /** Every character the user can pick: the built-in ones, the packs from GitHub, their own. */
+    fun everyone(): List<Character> = Characters.all + packs() + customs()
+
+    /** Characters installed from the packs on GitHub (stored as JSON, see [app.binelik.extras.Packs]). */
+    fun packs(): List<Character> = app.binelik.extras.Packs.parse(p.getString("packs", null).orEmpty())
+    var packsJson: String
+        get() = p.getString("packs", null).orEmpty()
+        set(v) = p.edit().putString("packs", v).apply()
 
     fun character(id: String = characterId): Character =
-        if (id == Characters.CUSTOM_ID) custom() ?: Characters.all.first() else Characters.byId(id) ?: Characters.all.first()
+        Characters.customSlot(id)?.let { custom(it) } ?: Characters.byId(id) ?: packs().firstOrNull { it.id == id } ?: Characters.all.first()
 }
 
 @Entity(tableName = "messages")
@@ -251,6 +287,10 @@ interface MessageDao {
 
     @Query("DELETE FROM messages WHERE character = :character")
     suspend fun deleteCharacter(character: String)
+
+    /** The characters the user wrote to most (for the icon's shortcuts). */
+    @Query("SELECT character FROM messages WHERE fromUser = 1 GROUP BY character ORDER BY COUNT(*) DESC LIMIT 3")
+    suspend fun topCharacters(): List<String>
 }
 
 @Database(entities = [Message::class, Anger::class], version = 3, exportSchema = true, autoMigrations = [androidx.room.AutoMigration(from = 1, to = 2), androidx.room.AutoMigration(from = 2, to = 3)])

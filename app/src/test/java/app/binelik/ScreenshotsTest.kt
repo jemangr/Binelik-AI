@@ -31,6 +31,12 @@ import app.binelik.ui.SettingsScreen
 import app.binelik.ui.Onboarding
 import app.binelik.ui.PrivacyScreen
 import app.binelik.ui.SafetyDialog
+import app.binelik.ui.GamesViewModel
+import app.binelik.ui.GameLine
+import app.binelik.ui.BattleScreen
+import app.binelik.ui.PlatesScreen
+import app.binelik.ui.GroupScreen
+import app.binelik.ui.CustomScreen
 import app.binelik.voice.Engine
 import app.binelik.i18n.Lang
 import com.github.takahirom.roborazzi.captureRoboImage
@@ -156,4 +162,38 @@ class ScreenshotsTest {
     @Test fun f4_settings() = shot("11-settings") { SettingsScreen(ChatViewModel(app), {}, {}, {}, {}) }
 
     @Test fun s7_privacy() = shot("7-privacy") { PrivacyScreen {} }
+
+    // ---- 1.2 ----
+    @Test fun g1_battle() {
+        val vm = GamesViewModel(app)
+        val c = Characters.byId("kavgatzis")!!
+        vm.battleWith = c
+        vm.battle.value = listOf(
+            GameLine(null, "Είσαι τόσο αργός που σε προσπερνάει και το 040."),
+            GameLine(c, "Κι εσύ τόσο βαρετός που σε άκουσα και κοιμήθηκε το Wi‑Fi.", 7, 8),
+            GameLine(null, "Το Wi‑Fi κοιμήθηκε γιατί μπήκες εσύ και έπεσε το επίπεδο."),
+            GameLine(c, "Ωπ! Αυτή πόνεσε. Κράτα την, θα την κλέψω.", 9, 6),
+        )
+        shot("12-battle") { BattleScreen({}, vm) }
+    }
+
+    @Test fun g2_plates() = shot("13-plates") { PlatesScreen {} }
+
+    @Test fun g3_custom() {
+        Engine.settings.setCustom(2, "Πεθερός", "Γκρινιάζει για όλα, ειδικά για το πώς παρκάρεις και τι ψήνεις στο μπάρμπεκιου.", 0xFF22D3EE)
+        shot("14-custom") { CustomScreen(ChatViewModel(app), 2, {}) }
+        Engine.settings.deleteCustom(2)
+    }
+
+    @Test fun g4_group() {
+        val vm = GamesViewModel(app)
+        val a = Characters.byId("mana")!!; val b = Characters.byId("taxitzis")!!
+        vm.groupStart(a, b)
+        vm.group.value = listOf(
+            GameLine(null, "Θα πάω διακοπές στη Μύκονο."),
+            GameLine(a, "Στη Μύκονο; Με τι λεφτά, παιδί μου; Πάρε και ζακέτα, έχει αέρα."),
+            GameLine(b, "Άσ' τη Μύκονο, φίλε μου. Τήνος, αυγουστιάτικα, και θα με θυμηθείς. Και η κυρία έχει δίκιο για τη ζακέτα."),
+        )
+        shot("15-group") { GroupScreen({}, vm) }
+    }
 }

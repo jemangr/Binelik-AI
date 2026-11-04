@@ -20,6 +20,8 @@ biometric = "1.1.0"
 # biometric 1.1.0 brings fragment 1.2.5, whose FragmentActivity rejects the request codes of the
 # Activity Result API (crash when asking for the microphone): a newer fragment fixes it.
 fragment = "1.5.7"
+# QR codes for sharing a character (Apache 2.0).
+zxing = "3.5.3"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -50,6 +52,7 @@ roborazzi-junit = { group = "io.github.takahirom.roborazzi", name = "roborazzi-j
 
 androidx-biometric = { group = "androidx.biometric", name = "biometric", version.ref = "biometric" }
 androidx-fragment = { group = "androidx.fragment", name = "fragment", version.ref = "fragment" }
+zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
 androidx-car-app = { group = "androidx.car.app", name = "app", version.ref = "carApp" }
 
 [plugins]

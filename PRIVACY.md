@@ -16,9 +16,20 @@
 
 - **Google Gemini**: με δωρεάν κλειδί, η Google μπορεί να χρησιμοποιεί τις κουβέντες για να βελτιώνει τα προϊόντα της, και μπορεί να τις διαβάσουν άνθρωποι. Με κλειδί με billing, όχι. [Όροι του Gemini API](https://ai.google.dev/gemini-api/terms)
 - **DeepSeek**: οι κουβέντες πάνε στους servers του DeepSeek, στην Κίνα.
+- **Groq**: οι κουβέντες πάνε στους servers του Groq, στις ΗΠΑ.
+- **OpenRouter**: οι κουβέντες πάνε στο OpenRouter (ΗΠΑ) και από εκεί στην εταιρεία του μοντέλου που διάλεξες. Κάποια δωρεάν μοντέλα κρατούν τις κουβέντες για εκπαίδευση· δες τις ρυθμίσεις απορρήτου στο openrouter.ai.
 
 ## Στατιστικά, κάρτες, ατάκα της ημέρας
 Το μπινελικόμετρο, το θυμόμετρο και τα βραβεία υπολογίζονται **στο κινητό**, από όσα είναι ήδη εκεί. Η «Σύνοψη εβδομάδας» στέλνει τα δικά σου μηνύματα της εβδομάδας στο AI σου **μόνο όταν πατήσεις το κουμπί**. Οι κάρτες για κοινοποίηση φτιάχνονται στο κινητό και τις στέλνεις εσύ, με το δικό σου μήνυμα μόνο αν το τσεκάρεις. Η «ατάκα της ημέρας» βγαίνει από το κινητό, χωρίς internet.
+
+## Παιχνίδια (1.2)
+- **Ουρλιαχτόμετρο**: μετράει μόνο την ένταση από το μικρόφωνο για 3 δευτερόλεπτα, στο κινητό. Ήχος δεν γράφεται ούτε στέλνεται.
+- **Σπάσε πιάτα**: χρησιμοποιεί το επιταχυνσιόμετρο για το κούνημα, μόνο όσο είναι ανοιχτή η σελίδα.
+- **Γράψ' το και κάψ' το**: το κείμενο δεν αποθηκεύεται και δεν πηγαίνει στο AI· σβήνεται με το κάψιμο.
+- **Κόντρα βρισιών, πρόβα, ομαδική κουβέντα**: όσα γράφεις πηγαίνουν στο AI σου, όπως στην κουβέντα, αλλά δεν αποθηκεύονται στο ιστορικό.
+- **Περισσότεροι χαρακτήρες**: όταν ανοίγεις τη σελίδα, η εφαρμογή κατεβάζει τη λίστα από το GitHub του Binelik AI (`raw.githubusercontent.com`). Δεν στέλνεται τίποτα δικό σου.
+- **Δικός σου χαρακτήρας με QR ή link**: όλος ο χαρακτήρας είναι μέσα στο link· δεν περνάει από κανέναν server. Το στέλνεις εσύ.
+- **Συντομεύσεις στο εικονίδιο**: δείχνουν τους 3 χαρακτήρες που μιλάς πιο συχνά· τις βλέπει μόνο το κινητό σου.
 
 ## Κλείδωμα και διακριτικό εικονίδιο
 Το κλείδωμα χρησιμοποιεί το δαχτυλίδι, το πρόσωπο ή το κλείδωμα οθόνης του Android· η εφαρμογή δεν βλέπει τα αποτυπώματά σου. Το διακριτικό εικονίδιο δείχνει «Σημειώσεις» στην αρχική οθόνη.
@@ -51,4 +62,4 @@
 ---
 
 ### English summary
-Binelik AI has no server and keeps nothing: no account, ads, analytics or trackers. Conversations (text only, never audio) stay on your phone and are excluded from Android backups; the key is encrypted with the Android Keystore. What you say goes straight from your phone to the AI you chose (Google Gemini, or DeepSeek in China) with your own key, under their policies; with a free Gemini key Google may use conversations to improve its products. With DeepSeek, your phone's speech recognition hears your voice and only text goes to DeepSeek. The safety check runs on the phone. If left on, the app asks GitHub at most every 6 hours for the latest version (nothing of yours is sent). Permissions: internet, microphone (only for voice), notifications (the Pause button). 18+, not therapy.
+Binelik AI has no server and keeps nothing: no account, ads, analytics or trackers. Groq (USA) and OpenRouter (USA, then the model's company) are also available, under their policies. The scream meter only measures loudness on the phone; character packs are downloaded from GitHub only when you open that page; a shared character travels inside its own link. Conversations (text only, never audio) stay on your phone and are excluded from Android backups; the key is encrypted with the Android Keystore. What you say goes straight from your phone to the AI you chose (Google Gemini, or DeepSeek in China) with your own key, under their policies; with a free Gemini key Google may use conversations to improve its products. With DeepSeek, your phone's speech recognition hears your voice and only text goes to DeepSeek. The safety check runs on the phone. If left on, the app asks GitHub at most every 6 hours for the latest version (nothing of yours is sent). Permissions: internet, microphone (only for voice), notifications (the Pause button). 18+, not therapy.

@@ -37,9 +37,15 @@ class PhoneVoice(
     @Volatile private var speaking = false
 
     override var micMuted = false
-        set(v) { field = v; main.post { if (v) recognizer?.cancel() else if (!speaking) listen() } }
+        set(v) { field = v; val keep = pttHold; main.post { if (v) { if (keep) recognizer?.stopListening() else recognizer?.cancel() } else if (!speaking) listen() } }
     override var voiceMuted = false
         set(v) { field = v; if (v) tts?.stop() }
+
+    /** Push to talk let go: stop listening but keep what was heard (stopListening, not cancel). */
+    override fun release() {
+        main.post { pttHold = true; micMuted = true; pttHold = false }
+    }
+    private var pttHold = false
 
     fun start() {
         if (!SpeechRecognizer.isRecognitionAvailable(context)) { onClosed("no-recognizer"); return }
