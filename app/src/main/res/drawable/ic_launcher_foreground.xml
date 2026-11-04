@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <!-- bubble -->
+    <path android:fillColor="#0B1119" android:strokeColor="#FFB020" android:strokeWidth="3"
+        android:pathData="M30,36 L78,36 Q84,36 84,42 L84,66 Q84,72 78,72 L52,72 L40,83 L40,72 L30,72 Q24,72 24,66 L24,42 Q24,36 30,36 Z" />
+    <!-- # -->
+    <path android:strokeColor="#FFB020" android:strokeWidth="2.6" android:strokeLineCap="round"
+        android:pathData="M36,46 L33,62 M42,46 L39,62 M31,50 L45,50 M30,58 L44,58" />
+    <!-- @-ish swirl -->
+    <path android:strokeColor="#FFB020" android:strokeWidth="2.6" android:strokeLineCap="round" android:fillColor="#00000000"
+        android:pathData="M60,49 A6,6 0 1,0 60,59 M54,54 A2.5,2.5 0 1,0 59,54 A2.5,2.5 0 1,0 54,54" />
+    <!-- ! -->
+    <path android:strokeColor="#FFB020" android:strokeWidth="3" android:strokeLineCap="round" android:pathData="M72,46 L72,56" />
+    <path android:fillColor="#FFB020" android:pathData="M72,60.5 m-1.8,0 a1.8,1.8 0 1,0 3.6,0 a1.8,1.8 0 1,0 -3.6,0" />
+    <!-- red badge -->
+    <path android:fillColor="#FF3B3B" android:pathData="M82,36 m-7,0 a7,7 0 1,0 14,0 a7,7 0 1,0 -14,0" />
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="2.2" android:strokeLineCap="round" android:pathData="M82,32.5 L82,36.5" />
+    <path android:fillColor="#FFFFFF" android:pathData="M82,39.3 m-1.2,0 a1.2,1.2 0 1,0 2.4,0 a1.2,1.2 0 1,0 -2.4,0" />
+</vector>
