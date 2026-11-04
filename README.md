@@ -3,8 +3,13 @@
 <h1 align="center">Binelik AI</h1>
 
 <p align="center"><b>Ξέσπα σε έναν AI χαρακτήρα.</b><br>
-Τα λες, βρίζεις, και ο χαρακτήρας που διάλεξες απαντά με τον τρόπο του.<br>
-Android · φωνή και κείμενο · Android Auto · ελληνικά και English · ανοιχτός κώδικας (MIT) · δικό σου κλειδί Gemini ή DeepSeek · χωρίς server · 18+</p>
+Τα λες, βρίζεις, και ο χαρακτήρας που διάλεξες απαντά με τον τρόπο του.</p>
+
+<p align="center">
+  <a href="https://github.com/jemangr/Binelik-AI/releases/latest/download/BinelikAI.apk"><img src="https://img.shields.io/badge/Download-APK-FFB020?style=for-the-badge&logo=android&logoColor=black" width="230" alt="Download APK"></a>
+</p>
+
+<p align="center">Android · φωνή και κείμενο · Android Auto · ελληνικά και English · ανοιχτός κώδικας (MIT) · δικό σου κλειδί Gemini ή DeepSeek · χωρίς server · 18+</p>
 
 <p align="center">
 <img src="docs/screenshots/0-live.png" width="200" alt="Το Live με τη Γυναίκα σου">
@@ -65,7 +70,7 @@ Android · φωνή και κείμενο · Android Auto · ελληνικά κ
 
 ## Ξεκίνα σε 2 λεπτά
 
-1. Κατέβασε το APK από τα [Releases](../../releases) και εγκατέστησέ το. Το Android θα σου ζητήσει άδεια για «εγκατάσταση από άγνωστες πηγές».
+1. Κατέβασε το [BinelikAI.apk](https://github.com/jemangr/Binelik-AI/releases/latest/download/BinelikAI.apk) στο κινητό και άνοιξέ το. Το Android θα σου ζητήσει άδεια για «εγκατάσταση από άγνωστες πηγές». Όλες οι εκδόσεις: [Releases](../../releases).
 2. Άνοιξέ το και δήλωσε ότι είσαι 18+.
 3. Διάλεξε **Gemini (δωρεάν)** και πάτα **«Άνοιγμα Google AI Studio»**.
 4. Εκεί πάτα **Create API key**, μετά **Copy**, και γύρνα στην εφαρμογή. Το κλειδί μπαίνει μόνο του και δοκιμάζεται.
@@ -139,6 +144,7 @@ Kotlin, Jetpack Compose, Room, OkHttp. Android 10 και μετά.
 - **Bring your own key:** Gemini (free key) or DeepSeek. The app opens the key page, and when you copy the key it is picked up automatically.
 - **Nothing kept:** no server, no account, no analytics. Conversations stay on your phone and are excluded from Android backups. The key is encrypted with the Android Keystore.
 - **Safety:** mentions of suicide or self-harm, and real intent of violence, stop the character at once and show help numbers. The check runs on the phone before anything reaches the AI.
+- **Install:** [download BinelikAI.apk](https://github.com/jemangr/Binelik-AI/releases/latest/download/BinelikAI.apk) on your phone, open it and allow “install unknown apps”.
 - **18+. Not therapy or medical advice.**
 
 ## License
