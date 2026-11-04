@@ -1,5 +1,6 @@
 package app.binelik.ai
 
+import app.binelik.extras.Report
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -151,6 +152,7 @@ object Ai {
 
     suspend fun reply(provider: Provider, key: String, system: String, turns: List<Turn>, search: Boolean = true): AiResult {
         if (provider != Provider.GEMINI) return send(provider, key, system, turns, false, false)
+            .also { if (it is AiResult.Fail) Report.note(provider.label, "${it.reason} ${it.detail}") }
         var r = send(provider, key, system, turns, search && !noSearch, !noThink)
         // An older model does not take the thinking level: once more without it, and from then on.
         if (!noThink && r is AiResult.Fail && r.detail == "HTTP 400") {
@@ -162,6 +164,7 @@ object Ai {
             if (r.detail == "HTTP 400") noSearch = true
             r = send(provider, key, system, turns, false, !noThink)
         }
+        if (r is AiResult.Fail) Report.note(provider.label, "${r.reason} ${r.detail}")
         return r
     }
 

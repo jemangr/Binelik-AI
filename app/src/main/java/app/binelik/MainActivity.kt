@@ -49,6 +49,7 @@ import app.binelik.ui.Logo
 import app.binelik.ui.Onboarding
 import app.binelik.ui.PrimaryButton
 import app.binelik.ui.PrivacyScreen
+import app.binelik.ui.ReportScreen
 import app.binelik.ui.SettingsScreen
 import app.binelik.ui.StatsScreen
 
@@ -77,18 +78,19 @@ class MainActivity : FragmentActivity() {
                 if (autoPlay && ready && vm.canVoice()) screen = "live"
                 val home = { if (vm.canVoice()) "live" else "chat" }
                 val back = when (screen) {
-                    "key", "privacy" -> "settings"
+                    "key", "privacy", "report" -> "settings"
                     "fight", "email", "stats" -> "fun"
                     else -> home()
                 }
                 if (screen != "live" && screen != "start" && !(screen == "chat" && !vm.canVoice())) BackHandler { screen = back }
                 when (screen) {
                     "start" -> Onboarding(vm) { screen = home() }
-                    "settings" -> SettingsScreen(vm, { screen = home() }, { screen = "key" }, { screen = "custom" }, { screen = "privacy" }, onLock = ::setLock)
+                    "settings" -> SettingsScreen(vm, { screen = home() }, { screen = "key" }, { screen = "custom" }, { screen = "privacy" }, onLock = ::setLock, onReport = { screen = "report" })
                     "key" -> KeyScreen(vm) { screen = "settings" }
                     "custom" -> CustomScreen(vm) { vm.refresh(); screen = home() }
                     "live" -> LiveScreen(vm, { screen = "chat" }, { screen = "settings" }, { screen = "custom" }, { screen = "fun" }, autoPlay).also { autoPlay = false }
                     "privacy" -> PrivacyScreen { screen = "settings" }
+                    "report" -> ReportScreen(vm) { screen = "settings" }
                     "fun" -> FunScreen(vm, { screen = home() }) { screen = if (it == "home") home() else it }
                     "fight" -> FightScreen(vm) { screen = "fun" }
                     "email" -> EmailScreen(vm) { screen = "fun" }

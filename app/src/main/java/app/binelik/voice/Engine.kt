@@ -1,5 +1,6 @@
 package app.binelik.voice
 
+import app.binelik.extras.Report
 import android.app.Application
 import android.content.Context
 import android.content.Intent
@@ -134,7 +135,7 @@ object Engine {
         }
     }
 
-    private fun fail(msg: String) { error.value = msg; state.value = LiveState.ERROR }
+    private fun fail(msg: String) { Report.note("Live", msg); error.value = msg; state.value = LiveState.ERROR }
 
     fun stop() {
         saveTurn()
@@ -209,6 +210,7 @@ object Engine {
         saveTurn()
         LiveService.stop(app)
         if (err != null) {
+            Report.note("Live", err)
             fail(when {
                 err == "no-recognizer" -> t("Το κινητό δεν έχει αναγνώριση ομιλίας. Εγκατέστησε το Google app ή χρησιμοποίησε Gemini.", "The phone has no speech recognition. Install the Google app or use Gemini.")
                 err == "no-tts" -> t("Το κινητό δεν έχει φωνή κειμένου (TTS).", "The phone has no text-to-speech voice.")
