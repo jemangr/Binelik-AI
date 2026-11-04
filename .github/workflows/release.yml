@@ -45,6 +45,8 @@ jobs:
           cp app/build/outputs/apk/release/app-release.apk "BinelikAI-$v.apk"
           # The same APK under a fixed name, for the «Download APK» button (releases/latest/download/BinelikAI.apk).
           cp app/build/outputs/apk/release/app-release.apk BinelikAI.apk
+          # R8 mapping, to read the crash reports (the code is open source anyway).
+          cp app/build/outputs/mapping/release/mapping.txt "BinelikAI-$v-mapping.txt"
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.apk.outputs.version }}
@@ -53,6 +55,7 @@ jobs:
           files: |
             BinelikAI-${{ steps.apk.outputs.version }}.apk
             BinelikAI.apk
+            BinelikAI-${{ steps.apk.outputs.version }}-mapping.txt
           body_path: docs/RELEASE.md
           # Not a pre-release, so that «latest» (the README button and the app's update check) finds it.
           prerelease: false

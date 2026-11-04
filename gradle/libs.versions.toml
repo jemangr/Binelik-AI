@@ -17,6 +17,9 @@ roborazzi = "1.77.0"
 androidxTestCore = "1.6.1"
 carApp = "1.7.0"
 biometric = "1.1.0"
+# biometric 1.1.0 brings fragment 1.2.5, whose FragmentActivity rejects the request codes of the
+# Activity Result API (crash when asking for the microphone): a newer fragment fixes it.
+fragment = "1.5.7"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -46,6 +49,7 @@ roborazzi-compose = { group = "io.github.takahirom.roborazzi", name = "roborazzi
 roborazzi-junit = { group = "io.github.takahirom.roborazzi", name = "roborazzi-junit-rule", version.ref = "roborazzi" }
 
 androidx-biometric = { group = "androidx.biometric", name = "biometric", version.ref = "biometric" }
+androidx-fragment = { group = "androidx.fragment", name = "fragment", version.ref = "fragment" }
 androidx-car-app = { group = "androidx.car.app", name = "app", version.ref = "carApp" }
 
 [plugins]
