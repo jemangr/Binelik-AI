@@ -47,6 +47,20 @@ class CharactersTest {
     }
 
     @Test fun teamsListedForTheSettings() {
-        assertTrue(Characters.teams.containsAll(listOf("Ολυμπιακός", "Παναθηναϊκός", "ΑΕΚ", "ΠΑΟΚ", "Άρης")))
+        assertTrue(Characters.teams.map { it.el }.containsAll(listOf("Ολυμπιακός", "Παναθηναϊκός", "ΑΕΚ", "ΠΑΟΚ", "Άρης")))
+    }
+
+    @Test fun englishCharactersAndPrompts() {
+        app.binelik.i18n.Lang.en = true
+        try {
+            Characters.all.forEach { c ->
+                assertFalse(c.id, Regex("[α-ωΑ-Ω]").containsMatchIn(c.name + c.tagline + c.sample + c.persona))
+                val p = Prompts.system(c, Intensity.HEAVY, "ΠΑΟΚ")
+                assertTrue(c.id, p.contains("You speak English"))
+                assertTrue(c.id, p.contains("1018") && p.contains("112"))
+            }
+            assertTrue(Prompts.system(Characters.byId("opados")!!, Intensity.MILD, "ΠΑΟΚ").contains("'PAOK'"))
+            assertTrue(Prompts.live(Characters.all.first(), Intensity.MILD, "", emptyList()).contains(Prompts.LIVE_PAUSE))
+        } finally { app.binelik.i18n.Lang.en = false }
     }
 }

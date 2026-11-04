@@ -1,0 +1,44 @@
+name: Release
+
+# A tag such as v1.0.0 builds the APK and publishes it as a GitHub release.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v5
+      # The release key, if the repository has it as secrets (Settings → Secrets → Actions):
+      # RELEASE_KEYSTORE (the .jks in base64), RELEASE_STORE_PASSWORD, RELEASE_KEY_ALIAS, RELEASE_KEY_PASSWORD.
+      - name: Release key
+        env:
+          KS: ${{ secrets.RELEASE_KEYSTORE }}
+          SP: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          KA: ${{ secrets.RELEASE_KEY_ALIAS }}
+          KP: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KS" ]; then
+            echo "$KS" | base64 -d > release.jks
+            printf 'storeFile=release.jks\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' "$SP" "$KA" "$KP" > keystore.properties
+          fi
+      - name: Tests
+        run: ./gradlew :app:testDebugUnitTest
+      - name: APK
+        run: |
+          ./gradlew :app:assembleRelease
+          cp app/build/outputs/apk/release/app-release.apk "BinelikAI-${GITHUB_REF_NAME}.apk"
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: BinelikAI-${{ github.ref_name }}.apk
+          body_path: docs/RELEASE.md
+          prerelease: true

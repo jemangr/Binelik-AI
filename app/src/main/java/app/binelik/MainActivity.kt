@@ -30,9 +30,9 @@ class MainActivity : ComponentActivity() {
         setContent {
             BinelikTheme {
                 val ready = vm.settings.adult && vm.keys.has(vm.settings.provider)
-                var screen by rememberSaveable { mutableStateOf(if (!ready) "start" else if (vm.canLive()) "live" else "chat") }
-                val home = { if (vm.canLive()) "live" else "chat" }
-                if (screen != "live" && screen != "start" && !(screen == "chat" && !vm.canLive())) BackHandler { screen = if (screen == "key" || screen == "privacy") "settings" else home() }
+                var screen by rememberSaveable { mutableStateOf(if (!ready) "start" else if (vm.canVoice()) "live" else "chat") }
+                val home = { if (vm.canVoice()) "live" else "chat" }
+                if (screen != "live" && screen != "start" && !(screen == "chat" && !vm.canVoice())) BackHandler { screen = if (screen == "key" || screen == "privacy") "settings" else home() }
                 when (screen) {
                     "start" -> Onboarding(vm) { screen = home() }
                     "settings" -> SettingsScreen(vm, { screen = home() }, { screen = "key" }, { screen = "custom" }, { screen = "privacy" })
@@ -40,15 +40,10 @@ class MainActivity : ComponentActivity() {
                     "custom" -> CustomScreen(vm) { vm.refresh(); screen = home() }
                     "live" -> LiveScreen(vm, { screen = "chat" }, { screen = "settings" }, { screen = "custom" })
                     "privacy" -> PrivacyScreen { screen = "settings" }
-                    else -> ChatScreen(vm, { screen = "settings" }, { screen = "custom" }, if (vm.canLive()) ({ screen = "live" }) else null)
+                    else -> ChatScreen(vm, { screen = "settings" }, { screen = "custom" }, if (vm.canVoice()) ({ screen = "live" }) else null)
                 }
             }
         }
     }
 
-    /** No microphone in the background: Live pauses when the app leaves the screen. */
-    override fun onStop() {
-        super.onStop()
-        vm.stopLive()
-    }
 }

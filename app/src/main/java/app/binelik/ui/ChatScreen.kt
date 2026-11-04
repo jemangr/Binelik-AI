@@ -1,5 +1,6 @@
 package app.binelik.ui
 
+import app.binelik.i18n.t
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -87,8 +88,8 @@ fun ChatScreen(vm: ChatViewModel, onSettings: () -> Unit, onCustom: () -> Unit, 
                 modifier = Modifier.border(1.dp, accent.copy(alpha = 0.5f), RoundedCornerShape(6.dp)).padding(horizontal = 5.dp, vertical = 2.dp),
             )
             Spacer(Modifier.weight(1f))
-            if (onLive != null) IconButton(onLive) { Icon(Icons.Default.GraphicEq, "Live με φωνή", tint = accent) }
-            IconButton(onSettings) { Icon(Icons.Default.Settings, "Ρυθμίσεις", tint = C.muted) }
+            if (onLive != null) IconButton(onLive) { Icon(Icons.Default.GraphicEq, t("Live με φωνή", "Live voice"), tint = accent) }
+            IconButton(onSettings) { Icon(Icons.Default.Settings, t("Ρυθμίσεις", "Settings"), tint = C.muted) }
         }
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
             Orb(accent, if (messages.isEmpty()) 190.dp else 96.dp, active = sending || messages.isEmpty())
@@ -96,12 +97,12 @@ fun ChatScreen(vm: ChatViewModel, onSettings: () -> Unit, onCustom: () -> Unit, 
                 Modifier.padding(top = 6.dp).clip(RoundedCornerShape(50)).background(C.panel)
                     .border(1.dp, accent.copy(alpha = 0.45f), RoundedCornerShape(50))
                     .clickable(role = Role.Button) { sheet = true }.padding(horizontal = 14.dp, vertical = 8.dp)
-                    .semantics { contentDescription = "Χαρακτήρας: ${c.name}. Αλλαγή χαρακτήρα" },
+                    .semantics { contentDescription = t("Χαρακτήρας: ${c.name}. Αλλαγή χαρακτήρα", "Character: ${c.name}. Change character") },
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Dot(accent); Spacer(Modifier.width(8.dp))
                 Text(c.name, color = accent, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
-                Spacer(Modifier.width(8.dp)); Text("Αλλαγή ▾", color = C.muted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.width(8.dp)); Text(t("Αλλαγή ▾", "Change ▾"), color = C.muted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
             }
             Segmented(
                 Intensity.entries, intensity, { it.label }, accent, vm::setIntensity,
@@ -116,12 +117,12 @@ fun ChatScreen(vm: ChatViewModel, onSettings: () -> Unit, onCustom: () -> Unit, 
                 )
             }
             items(messages, key = { it.id }) { Bubble(it, accent) }
-            if (sending) item { Text("${c.name} γράφει…", color = C.dim, fontSize = 12.sp, modifier = Modifier.padding(start = 6.dp)) }
+            if (sending) item { Text(t("${c.name} γράφει…", "${c.name} is typing…"), color = C.dim, fontSize = 12.sp, modifier = Modifier.padding(start = 6.dp)) }
         }
         error?.let { Text(it, color = C.danger, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 18.dp, vertical = 4.dp)) }
         Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             TextField(
-                input, { input = it }, Modifier.weight(1f), placeholder = { Text("Γράψ' τα όλα…") }, maxLines = 4,
+                input, { input = it }, Modifier.weight(1f), placeholder = { Text(t("Γράψ' τα όλα…", "Let it all out…")) }, maxLines = 4,
                 shape = RoundedCornerShape(24.dp),
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = C.panel, unfocusedContainerColor = C.panel,
@@ -135,13 +136,13 @@ fun ChatScreen(vm: ChatViewModel, onSettings: () -> Unit, onCustom: () -> Unit, 
                 contentAlignment = Alignment.Center,
             ) {
                 if (sending) CircularProgressIndicator(Modifier.size(20.dp), color = accent, strokeWidth = 2.dp)
-                else Icon(Icons.AutoMirrored.Filled.Send, "Αποστολή", tint = if (input.isBlank()) C.dim else Color.Black)
+                else Icon(Icons.AutoMirrored.Filled.Send, t("Αποστολή", "Send"), tint = if (input.isBlank()) C.dim else Color.Black)
             }
         }
     }
 
     if (sheet) ModalBottomSheet({ sheet = false }, containerColor = Color(0xFF0A1018)) {
-        Text("Με ποιον θα τα πεις;", fontWeight = FontWeight.ExtraBold, fontSize = 17.sp, modifier = Modifier.padding(horizontal = 18.dp, vertical = 4.dp))
+        Text(t("Με ποιον θα τα πεις;", "Who do you want to talk to?"), fontWeight = FontWeight.ExtraBold, fontSize = 17.sp, modifier = Modifier.padding(horizontal = 18.dp, vertical = 4.dp))
         CharacterList(vm, Modifier.heightIn(max = 560.dp), onCustom = { sheet = false; onCustom() }) { vm.pick(it); sheet = false }
     }
     if (pause) SafetyDialog { vm.pause.value = false }
@@ -179,8 +180,8 @@ fun CharacterList(vm: ChatViewModel, modifier: Modifier = Modifier, onCustom: ((
                 Box(Modifier.size(34.dp).clip(CircleShape).border(2.dp, C.dim, CircleShape), contentAlignment = Alignment.Center) { Text("+", color = C.muted, fontSize = 18.sp) }
                 Spacer(Modifier.width(12.dp))
                 Column {
-                    Text(if (custom == null) "Φτιάξε τον δικό σου" else "Άλλαξε τον δικό σου", fontWeight = FontWeight.Bold, fontSize = 14.5.sp)
-                    Text("Περιγραφή, φωνή, χρώμα", color = C.muted, fontSize = 12.sp)
+                    Text(if (custom == null) t("Φτιάξε τον δικό σου", "Make your own") else t("Άλλαξε τον δικό σου", "Change your own"), fontWeight = FontWeight.Bold, fontSize = 14.5.sp)
+                    Text(t("Περιγραφή, φωνή, χρώμα", "Description, voice, colour"), color = C.muted, fontSize = 12.sp)
                 }
             }
         }
@@ -204,7 +205,7 @@ private fun CharacterRow(c: Character, gender: Gender, current: Boolean, onClick
             Text(c.name, fontWeight = FontWeight.Bold, fontSize = 14.5.sp)
             Text(c.tagline, color = C.muted, fontSize = 12.sp, maxLines = 2)
         }
-        Text(if (gender == Gender.MALE) "Ανδρική" else "Γυναικεία", color = k, fontFamily = FontFamily.Monospace, fontSize = 10.sp)
+        Text(if (gender == Gender.MALE) t("Ανδρική", "Male") else t("Γυναικεία", "Female"), color = k, fontFamily = FontFamily.Monospace, fontSize = 10.sp)
     }
 }
 
@@ -213,16 +214,16 @@ fun SafetyDialog(onClose: () -> Unit) {
     val context = LocalContext.current
     AlertDialog(
         onDismissRequest = {}, containerColor = C.panel,
-        title = { Text("Σταματάμε λίγο το παιχνίδι", fontWeight = FontWeight.ExtraBold) },
+        title = { Text(t("Σταματάμε λίγο το παιχνίδι", "Let's stop the game for a moment"), fontWeight = FontWeight.ExtraBold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("Αυτό που είπες ακούγεται σοβαρό, και δεν είναι για πλάκα. Δεν είσαι μόνος σου. Μίλα τώρα με κάποιον που μπορεί να βοηθήσει:", color = C.muted, lineHeight = 20.sp)
-                CallRow("24ωρη γραμμή για την αυτοκτονία", "1018") { dial(context, "1018") }
-                CallRow("Έκτακτη ανάγκη", "112") { dial(context, "112") }
+                Text(t("Αυτό που είπες ακούγεται σοβαρό, και δεν είναι για πλάκα. Δεν είσαι μόνος σου. Μίλα τώρα με κάποιον που μπορεί να βοηθήσει:", "What you said sounds serious, and it isn't a joke. You're not alone. Talk now to someone who can help:"), color = C.muted, lineHeight = 20.sp)
+                CallRow(t("24ωρη γραμμή για την αυτοκτονία", "Suicide line, 24 hours (Greece)"), "1018") { dial(context, "1018") }
+                CallRow(t("Έκτακτη ανάγκη", "Emergency"), "112") { dial(context, "112") }
             }
         },
-        confirmButton = { PrimaryButton("Θέλω να μιλήσω σε κάποιον", { dial(context, "1018") }) },
-        dismissButton = { SecondaryButton("Είμαι καλά, συνέχεια", onClose) },
+        confirmButton = { PrimaryButton(t("Θέλω να μιλήσω σε κάποιον", "I want to talk to someone"), { dial(context, "1018") }) },
+        dismissButton = { SecondaryButton(t("Είμαι καλά, συνέχεια", "I'm OK, go on"), onClose) },
     )
 }
 
@@ -231,7 +232,7 @@ private fun CallRow(label: String, number: String, onClick: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(C.panel2).border(1.dp, C.line, RoundedCornerShape(14.dp))
             .clickable(role = Role.Button, onClick = onClick).padding(horizontal = 14.dp, vertical = 12.dp)
-            .semantics { contentDescription = "$label, κλήση $number" },
+            .semantics { contentDescription = t("$label, κλήση $number", "$label, call $number") },
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(label, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))

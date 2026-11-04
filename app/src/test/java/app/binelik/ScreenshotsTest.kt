@@ -26,6 +26,8 @@ import app.binelik.ui.LiveScreen
 import app.binelik.ui.Onboarding
 import app.binelik.ui.PrivacyScreen
 import app.binelik.ui.SafetyDialog
+import app.binelik.voice.Engine
+import app.binelik.i18n.Lang
 import com.github.takahirom.roborazzi.captureRoboImage
 import kotlinx.coroutines.runBlocking
 import org.junit.Rule
@@ -42,6 +44,8 @@ import org.robolectric.annotation.GraphicsMode
 class ScreenshotsTest {
     @get:Rule val compose = createComposeRule()
     private val app get() = ApplicationProvider.getApplicationContext<android.app.Application>()
+
+    @org.junit.Before fun greek() { Engine.init(app); Lang.en = false }
 
     private fun shot(name: String, content: @androidx.compose.runtime.Composable () -> Unit) {
         compose.mainClock.autoAdvance = false
@@ -95,6 +99,22 @@ class ScreenshotsTest {
         val vm = ChatViewModel(app)
         vm.pick(Characters.byId("gynaika")!!)
         shot("0-live") { LiveScreen(vm, {}, {}, {}) }
+    }
+
+    @Test fun e1_live_en() {
+        Lang.en = true
+        val vm = ChatViewModel(app)
+        vm.pick(Characters.byId("afentiko")!!)
+        shot("en-live") { LiveScreen(vm, {}, {}, {}) }
+    }
+
+    @Test fun e2_characters_en() {
+        Lang.en = true
+        shot("en-characters") {
+            Column(Modifier.fillMaxSize().background(Color(0xFF0A1018)).padding(top = 16.dp)) {
+                CharacterList(ChatViewModel(app), onCustom = {}) {}
+            }
+        }
     }
 
     @Test fun s7_privacy() = shot("7-privacy") { PrivacyScreen {} }

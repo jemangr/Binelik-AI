@@ -90,8 +90,13 @@ class Settings(context: Context) {
     fun setVoiceIndex(id: String, i: Int) = p.edit().putInt("v_$id", i).apply()
 
     var team: String
-        get() = p.getString("team", null) ?: Characters.teams.first()
+        get() = p.getString("team", null) ?: Characters.teams.first().el
         set(v) = p.edit().putString("team", v.trim().take(40)).apply()
+
+    /** English instead of Greek (screens and characters); first time, the phone's language decides. */
+    var english: Boolean
+        get() = p.getBoolean("en", java.util.Locale.getDefault().language != "el")
+        set(v) = p.edit().putBoolean("en", v).apply()
 
     var customName: String
         get() = p.getString("c_name", null) ?: ""

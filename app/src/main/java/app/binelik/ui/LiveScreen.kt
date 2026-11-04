@@ -1,5 +1,6 @@
 package app.binelik.ui
 
+import app.binelik.i18n.t
 import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -63,6 +64,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import app.binelik.data.Intensity
+import app.binelik.voice.LiveState
 
 /** The Live home: the voice circle, Pause/Play in the middle, the two Mutes beside it. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -83,23 +85,28 @@ fun LiveScreen(vm: ChatViewModel, onChat: () -> Unit, onSettings: () -> Unit, on
     val on = state == LiveState.CONNECTING || state == LiveState.LISTENING || state == LiveState.SPEAKING
 
     val askMic = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
-        if (ok) vm.play() else { vm.liveError.value = "Το Live θέλει το μικρόφωνο. Δώσ' του άδεια, ή γράψε στην κουβέντα με κείμενο."; vm.live.value = LiveState.ERROR }
+        if (ok) vm.play() else { vm.liveError.value = t("Το Live θέλει το μικρόφωνο. Δώσ' του άδεια, ή γράψε στην κουβέντα με κείμενο.", "Live needs the microphone. Allow it, or type in the text chat."); vm.live.value = LiveState.ERROR }
     }
+    // Android 13+: the notification with the Pause button while the conversation runs.
+    val askNotify = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
     fun playPause() {
         when {
             on -> vm.stopLive()
-            !vm.canLive() -> { vm.liveError.value = "Το Live θέλει κλειδί Gemini (το DeepSeek δεν έχει φωνή). Βάλ' το από τις Ρυθμίσεις."; vm.live.value = LiveState.ERROR }
-            ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED -> vm.play()
+            !vm.canVoice() -> { vm.liveError.value = t("Δεν υπάρχει κλειδί για το AI. Βάλ' το από τις Ρυθμίσεις.", "There is no AI key. Add it in the Settings."); vm.live.value = LiveState.ERROR }
+            ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED -> {
+                vm.play()
+                if (android.os.Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) askNotify.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
             else -> askMic.launch(Manifest.permission.RECORD_AUDIO)
         }
     }
 
     val hud = when (state) {
-        LiveState.OFF -> "ΣΕ ΠΑΥΣΗ · ΠΑΤΑ PLAY"
-        LiveState.CONNECTING -> "ΣΥΝΔΕΣΗ…"
-        LiveState.LISTENING -> if (mic) "ΔΕΝ ΣΕ ΑΚΟΥΕΙ" else "ΣΕ ΑΚΟΥΕΙ"
-        LiveState.SPEAKING -> if (voice) "ΜΙΛΑΕΙ (ΣΕ ΣΙΓΑΣΗ)" else "ΜΙΛΑΕΙ"
-        LiveState.ERROR -> "ΣΤΑΜΑΤΗΣΕ"
+        LiveState.OFF -> t("ΣΕ ΠΑΥΣΗ · ΠΑΤΑ PLAY", "PAUSED · PRESS PLAY")
+        LiveState.CONNECTING -> t("ΣΥΝΔΕΣΗ…", "CONNECTING…")
+        LiveState.LISTENING -> if (mic) t("ΔΕΝ ΣΕ ΑΚΟΥΕΙ", "NOT LISTENING") else t("ΣΕ ΑΚΟΥΕΙ", "LISTENING")
+        LiveState.SPEAKING -> if (voice) t("ΜΙΛΑΕΙ (ΣΕ ΣΙΓΑΣΗ)", "SPEAKING (MUTED)") else t("ΜΙΛΑΕΙ", "SPEAKING")
+        LiveState.ERROR -> t("ΣΤΑΜΑΤΗΣΕ", "STOPPED")
     }
 
     Column(Modifier.fillMaxSize().background(C.bg).statusBarsPadding().navigationBarsPadding()) {
@@ -108,14 +115,14 @@ fun LiveScreen(vm: ChatViewModel, onChat: () -> Unit, onSettings: () -> Unit, on
             Text("Binelik AI", fontWeight = FontWeight.ExtraBold, fontSize = 17.sp)
             Spacer(Modifier.width(8.dp))
             Text(
-                if (on) "LIVE" else "ΠΑΥΣΗ", color = accent, fontFamily = FontFamily.Monospace, fontSize = 10.sp, fontWeight = FontWeight.Bold,
+                if (on) "LIVE" else t("ΠΑΥΣΗ", "PAUSED"), color = accent, fontFamily = FontFamily.Monospace, fontSize = 10.sp, fontWeight = FontWeight.Bold,
                 modifier = Modifier.border(1.dp, accent.copy(alpha = 0.5f), RoundedCornerShape(6.dp)).padding(horizontal = 5.dp, vertical = 2.dp),
             )
             Spacer(Modifier.weight(1f))
-            IconButton(onChat) { Icon(Icons.AutoMirrored.Filled.Chat, "Κουβέντα με κείμενο", tint = C.muted) }
-            IconButton(onSettings) { Icon(Icons.Default.Settings, "Ρυθμίσεις", tint = C.muted) }
+            IconButton(onChat) { Icon(Icons.AutoMirrored.Filled.Chat, t("Κουβέντα με κείμενο", "Text chat"), tint = C.muted) }
+            IconButton(onSettings) { Icon(Icons.Default.Settings, t("Ρυθμίσεις", "Settings"), tint = C.muted) }
         }
-        Hud("GEMINI LIVE · $hud", Modifier.align(Alignment.CenterHorizontally).padding(top = 4.dp).semantics { liveRegion = LiveRegionMode.Polite })
+        Hud((if (vm.settings.provider == app.binelik.ai.Provider.GEMINI) "GEMINI LIVE · " else "DEEPSEEK · ") + hud, Modifier.align(Alignment.CenterHorizontally).padding(top = 4.dp).semantics { liveRegion = LiveRegionMode.Polite })
         Box(Modifier.fillMaxWidth().padding(top = 6.dp), contentAlignment = Alignment.Center) {
             Orb(accent, 250.dp, active = on && !(state == LiveState.LISTENING && mic))
         }
@@ -124,12 +131,12 @@ fun LiveScreen(vm: ChatViewModel, onChat: () -> Unit, onSettings: () -> Unit, on
                 Modifier.padding(top = 4.dp).clip(RoundedCornerShape(50)).background(C.panel)
                     .border(1.dp, accent.copy(alpha = 0.45f), RoundedCornerShape(50))
                     .clickable(role = Role.Button) { sheet = true }.padding(horizontal = 14.dp, vertical = 8.dp)
-                    .semantics { contentDescription = "Χαρακτήρας: ${c.name}. Αλλαγή χαρακτήρα" },
+                    .semantics { contentDescription = t("Χαρακτήρας: ${c.name}. Αλλαγή χαρακτήρα", "Character: ${c.name}. Change character") },
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Dot(accent); Spacer(Modifier.width(8.dp))
                 Text(c.name, color = accent, fontWeight = FontWeight.ExtraBold, fontSize = 19.sp)
-                Spacer(Modifier.width(8.dp)); Text("Αλλαγή ▾", color = C.muted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.width(8.dp)); Text(t("Αλλαγή ▾", "Change ▾"), color = C.muted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
             }
             Text(
                 when {
@@ -143,7 +150,7 @@ fun LiveScreen(vm: ChatViewModel, onChat: () -> Unit, onSettings: () -> Unit, on
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp).heightIn(min = 44.dp),
             )
             Segmented(Intensity.entries, intensity, { it.label }, accent, vm::setIntensity, Modifier.padding(horizontal = 48.dp))
-            val banner = listOfNotNull(if (mic) "Δεν σε ακούει (μικρόφωνο κλειστό)" else null, if (voice) "Δεν τον ακούς (φωνή AI σε σίγαση)" else null).joinToString(" · ")
+            val banner = listOfNotNull(if (mic) t("Δεν σε ακούει (μικρόφωνο κλειστό)", "Not listening (microphone off)") else null, if (voice) t("Δεν τον ακούς (φωνή AI σε σίγαση)", "You can't hear it (AI voice muted)") else null).joinToString(" · ")
             (err ?: banner.ifEmpty { null })?.let {
                 Text(
                     it, color = Color(0xFFFFB3B3), fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center,
@@ -155,20 +162,20 @@ fun LiveScreen(vm: ChatViewModel, onChat: () -> Unit, onSettings: () -> Unit, on
         }
         Spacer(Modifier.weight(1f))
         Row(Modifier.fillMaxWidth().padding(bottom = 26.dp), horizontalArrangement = Arrangement.spacedBy(26.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
-            MuteButton(mic, if (mic) Icons.Default.MicOff else Icons.Default.Mic, if (mic) "Κλειστό" else "Μικρόφωνο", "Μικρόφωνο", vm::toggleMic)
+            MuteButton(mic, if (mic) Icons.Default.MicOff else Icons.Default.Mic, if (mic) t("Κλειστό", "Off") else t("Μικρόφωνο", "Microphone"), t("Μικρόφωνο", "Microphone"), vm::toggleMic)
             Box(
                 Modifier.size(88.dp).clip(CircleShape).background(if (on) Color.White else C.panel2)
                     .border(6.dp, accent.copy(alpha = 0.25f), CircleShape)
                     .clickable(role = Role.Button) { playPause() }
-                    .semantics { contentDescription = if (on) "Παύση" else "Έναρξη Live" },
+                    .semantics { contentDescription = if (on) t("Παύση", "Pause") else t("Έναρξη Live", "Start Live") },
                 contentAlignment = Alignment.Center,
             ) { Icon(if (on) Icons.Default.Pause else Icons.Default.PlayArrow, null, tint = if (on) Color.Black else accent, modifier = Modifier.size(40.dp)) }
-            MuteButton(voice, if (voice) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp, if (voice) "Σε σίγαση" else "Φωνή AI", "Φωνή AI", vm::toggleVoice)
+            MuteButton(voice, if (voice) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp, if (voice) t("Σε σίγαση", "Muted") else t("Φωνή AI", "AI voice"), t("Φωνή AI", "AI voice"), vm::toggleVoice)
         }
     }
 
     if (sheet) ModalBottomSheet({ sheet = false }, containerColor = Color(0xFF0A1018)) {
-        Text("Με ποιον θα τα πεις;", fontWeight = FontWeight.ExtraBold, fontSize = 17.sp, modifier = Modifier.padding(horizontal = 18.dp, vertical = 4.dp))
+        Text(t("Με ποιον θα τα πεις;", "Who do you want to talk to?"), fontWeight = FontWeight.ExtraBold, fontSize = 17.sp, modifier = Modifier.padding(horizontal = 18.dp, vertical = 4.dp))
         CharacterList(vm, Modifier.heightIn(max = 560.dp), onCustom = { sheet = false; onCustom() }) { vm.pick(it); sheet = false }
     }
     if (pause) SafetyDialog { vm.pause.value = false }
@@ -178,7 +185,7 @@ fun LiveScreen(vm: ChatViewModel, onChat: () -> Unit, onSettings: () -> Unit, on
 private fun MuteButton(muted: Boolean, icon: ImageVector, label: String, name: String, onClick: () -> Unit) {
     Column(
         Modifier.clip(RoundedCornerShape(16.dp)).clickable(role = Role.Switch, onClick = onClick).padding(4.dp)
-            .semantics { contentDescription = name; stateDescription = if (muted) "Σε σίγαση" else "Ανοιχτό" },
+            .semantics { contentDescription = name; stateDescription = if (muted) t("Σε σίγαση", "Muted") else t("Ανοιχτό", "On") },
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(

@@ -20,14 +20,23 @@
 ## Ο έλεγχος ασφάλειας
 Ο έλεγχος για αυτοκτονία και για πραγματική πρόθεση βίας γίνεται **στο κινητό σου** και δεν στέλνεται πουθενά. Όταν πιάνει κάτι, το μήνυμα δεν πηγαίνει στο AI.
 
-## Φωνή και μικρόφωνο (Live)
-Το μικρόφωνο ζητιέται μόνο όταν πατήσεις **Play** στο Live. Η φωνή σου στέλνεται ζωντανά μόνο στο Google Gemini, με το δικό σου κλειδί, και δεν γράφεται πουθενά στο κινητό: κρατιέται μόνο το κείμενο της κουβέντας (η μεταγραφή που δίνει το Gemini). Όταν η εφαρμογή φύγει από την οθόνη, το Live σταματά και το μικρόφωνο κλείνει.
+## Φωνή και μικρόφωνο
+Το μικρόφωνο ζητιέται μόνο όταν πατήσεις **Play**.
+- **Με το Gemini**, η φωνή σου στέλνεται ζωντανά μόνο στο Google Gemini, με το δικό σου κλειδί.
+- **Με το DeepSeek**, τη φωνή σου την ακούει η αναγνώριση ομιλίας του κινητού σου (συνήθως της Google, με τη δική της πολιτική) και στο DeepSeek πηγαίνει μόνο το κείμενο. Την απάντηση τη διαβάζει η φωνή του κινητού.
+
+Ήχος δεν γράφεται πουθενά: κρατιέται μόνο το κείμενο της κουβέντας. Όσο μιλάτε, και με σβηστή οθόνη ή στο Android Auto, μια ειδοποίηση δείχνει ότι το μικρόφωνο είναι ανοιχτό, με κουμπί **Παύση**.
 
 ## Άδειες
-**Internet** (για το AI) και **μικρόφωνο** (μόνο για το Live). Τίποτα άλλο: ούτε επαφές, ούτε τοποθεσία, ούτε αρχεία.
+**Internet** (για το AI), **μικρόφωνο** (μόνο για τη φωνή) και **ειδοποιήσεις** (για το κουμπί Παύση). Τίποτα άλλο: ούτε επαφές, ούτε τοποθεσία, ούτε αρχεία.
 
 ## 18+ και όχι ψυχοθεραπεία
 Είναι για ενήλικες. Δεν είναι ψυχοθεραπεία ούτε ιατρική συμβουλή. Αν χρειάζεσαι βοήθεια: **1018** (24ωρη γραμμή για την αυτοκτονία) ή **112**.
 
 ## Ανοιχτός κώδικας
 Ο κώδικας είναι δημόσιος (MIT license) εδώ, και μπορεί ο καθένας να ελέγξει όλα τα παραπάνω. Για ερωτήσεις, άνοιξε ένα [issue](../../issues).
+
+---
+
+### English summary
+Binelik AI has no server and keeps nothing: no account, ads, analytics or trackers. Conversations (text only, never audio) stay on your phone and are excluded from Android backups; the key is encrypted with the Android Keystore. What you say goes straight from your phone to the AI you chose (Google Gemini, or DeepSeek in China) with your own key, under their policies; with a free Gemini key Google may use conversations to improve its products. With DeepSeek, your phone's speech recognition hears your voice and only text goes to DeepSeek. The safety check runs on the phone. Permissions: internet, microphone (only for voice), notifications (the Pause button). 18+, not therapy.

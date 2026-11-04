@@ -46,6 +46,15 @@ sealed class LiveEvent {
     data object Interrupted : LiveEvent()
     data object TurnComplete : LiveEvent()
     data object GoAway : LiveEvent()
+    /** Everything the user has said in this turn so far (the phone's recogniser gives it whole). */
+    data class HeardSoFar(val text: String) : LiveEvent()
+}
+
+/** A voice conversation in progress: Gemini Live, or the phone's own voice with a text AI. */
+interface Conversation {
+    var micMuted: Boolean
+    var voiceMuted: Boolean
+    fun stop()
 }
 
 /** The Gemini Live API messages, without Android, so they can be tested. */
@@ -96,6 +105,8 @@ object LiveProtocol {
         }
     }.toString()
 
+    fun text(s: String): String = buildJsonObject { putJsonObject("realtimeInput") { put("text", s) } }.toString()
+
     /** Sent when the microphone is muted, so the model answers what it already heard. */
     val audioEnd: String = buildJsonObject { putJsonObject("realtimeInput") { put("audioStreamEnd", true) } }.toString()
 
@@ -139,10 +150,13 @@ class LiveSession(
     private val scope: CoroutineScope,
     private val onEvent: (LiveEvent) -> Unit,
     private val onClosed: (error: String?) -> Unit,
-) {
-    @Volatile var micMuted = false
+    /** False for the voice sample in the settings: no microphone, only [firstText]. */
+    private val listen: Boolean = true,
+    private val firstText: String? = null,
+) : Conversation {
+    @Volatile override var micMuted = false
         set(v) { field = v; if (v) socket?.send(LiveProtocol.audioEnd) }
-    @Volatile var voiceMuted = false
+    @Volatile override var voiceMuted = false
         set(v) { field = v; track?.setVolume(if (v) 0f else 1f) }
 
     private val http = OkHttpClient.Builder().readTimeout(0, TimeUnit.MILLISECONDS).pingInterval(20, TimeUnit.SECONDS).build()
@@ -184,7 +198,7 @@ class LiveSession(
     private fun handle(text: String) {
         for (e in LiveProtocol.parse(text)) {
             when (e) {
-                LiveEvent.Ready -> { ready = true; startAudio() }
+                LiveEvent.Ready -> { ready = true; startAudio(); firstText?.let { socket?.send(LiveProtocol.text(it)) } }
                 is LiveEvent.Audio -> playback.trySend(e.pcm)
                 LiveEvent.Interrupted -> { while (playback.tryReceive().isSuccess) Unit; track?.run { pause(); flush(); play() } }
                 else -> Unit
@@ -195,19 +209,13 @@ class LiveSession(
 
     @SuppressLint("MissingPermission") // checked by the screen before starting
     private fun startAudio() {
+        if (!listen) { startPlayback(); return }
         val inSize = maxOf(AudioRecord.getMinBufferSize(LiveProtocol.IN_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT), 3200)
         val rec = AudioRecord(MediaRecorder.AudioSource.VOICE_COMMUNICATION, LiveProtocol.IN_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, inSize * 2)
         if (AcousticEchoCanceler.isAvailable()) runCatching { AcousticEchoCanceler.create(rec.audioSessionId)?.enabled = true }
         if (NoiseSuppressor.isAvailable()) runCatching { NoiseSuppressor.create(rec.audioSessionId)?.enabled = true }
         record = rec
-        val outSize = AudioTrack.getMinBufferSize(LiveProtocol.OUT_RATE, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT)
-        val t = AudioTrack.Builder()
-            .setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION).setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build())
-            .setAudioFormat(AudioFormat.Builder().setSampleRate(LiveProtocol.OUT_RATE).setChannelMask(AudioFormat.CHANNEL_OUT_MONO).setEncoding(AudioFormat.ENCODING_PCM_16BIT).build())
-            .setBufferSizeInBytes(outSize * 4).setTransferMode(AudioTrack.MODE_STREAM).build()
-        t.setVolume(if (voiceMuted) 0f else 1f)
-        t.play()
-        track = t
+        startPlayback()
         rec.startRecording()
         micJob = scope.launch(Dispatchers.IO) {
             val buf = ByteArray(3200) // 100 ms
@@ -216,6 +224,17 @@ class LiveSession(
                 if (n > 0 && !micMuted) socket?.send(LiveProtocol.audio(buf, n))
             }
         }
+    }
+
+    private fun startPlayback() {
+        val outSize = AudioTrack.getMinBufferSize(LiveProtocol.OUT_RATE, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT)
+        val t = AudioTrack.Builder()
+            .setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION).setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build())
+            .setAudioFormat(AudioFormat.Builder().setSampleRate(LiveProtocol.OUT_RATE).setChannelMask(AudioFormat.CHANNEL_OUT_MONO).setEncoding(AudioFormat.ENCODING_PCM_16BIT).build())
+            .setBufferSizeInBytes(outSize * 4).setTransferMode(AudioTrack.MODE_STREAM).build()
+        t.setVolume(if (voiceMuted) 0f else 1f)
+        t.play()
+        track = t
         playJob = scope.launch(Dispatchers.IO) {
             for (pcm in playback) { if (closed) break; t.write(pcm, 0, pcm.size) }
         }
@@ -236,7 +255,7 @@ class LiveSession(
         onClosed(error)
     }
 
-    fun stop() {
+    override fun stop() {
         closed = true
         runCatching { socket?.close(1000, null) }
         finish(null)

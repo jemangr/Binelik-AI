@@ -6,6 +6,10 @@
     <!-- Live (0.2): asked only when the user presses Play; the audio goes only to Gemini. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <!-- The conversation goes on with the screen off and in the car, with a notification and a Pause button. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- To open the key page, the browser and the dialer (Android 11+ package visibility). -->
     <queries>
@@ -16,10 +20,18 @@
         <intent>
             <action android:name="android.intent.action.DIAL" />
         </intent>
+        <!-- The phone's speech recogniser (for DeepSeek's voice) and its text-to-speech voices. -->
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
     </queries>
 
     <!-- No backups: the conversations and the key stay on this phone only. -->
     <application
+        android:name=".BinelikApp"
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="false"
@@ -37,5 +49,17 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service android:name=".voice.LiveService" android:exported="false" android:foregroundServiceType="microphone" />
+
+        <!-- Android Auto (only with «unknown sources» on in Android Auto's developer settings). -->
+        <service android:name=".car.CarService" android:exported="true">
+            <intent-filter>
+                <action android:name="androidx.car.app.CarAppService" />
+                <category android:name="androidx.car.app.category.IOT" />
+            </intent-filter>
+        </service>
+        <meta-data android:name="com.google.android.gms.car.application" android:resource="@xml/automotive_app_desc" />
+        <meta-data android:name="androidx.car.app.minCarApiLevel" android:value="1" />
     </application>
 </manifest>
