@@ -4,6 +4,8 @@ import app.binelik.i18n.t
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -65,7 +67,8 @@ import app.binelik.data.Message
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChatScreen(vm: ChatViewModel, onSettings: () -> Unit, onCustom: () -> Unit, onLive: (() -> Unit)? = null) {
+fun ChatScreen(vm: ChatViewModel, onSettings: () -> Unit, onCustom: () -> Unit, onLive: (() -> Unit)? = null, onFun: () -> Unit = {}) {
+    var sharing by remember { mutableStateOf<Pair<String, String?>?>(null) }
     val c by vm.character.collectAsState()
     val intensity by vm.intensity.collectAsState()
     val messages by vm.messages.collectAsState()
@@ -88,6 +91,7 @@ fun ChatScreen(vm: ChatViewModel, onSettings: () -> Unit, onCustom: () -> Unit, 
                 modifier = Modifier.border(1.dp, accent.copy(alpha = 0.5f), RoundedCornerShape(6.dp)).padding(horizontal = 5.dp, vertical = 2.dp),
             )
             Spacer(Modifier.weight(1f))
+            IconButton(onFun) { Text("🎲", fontSize = 20.sp) }
             if (onLive != null) IconButton(onLive) { Icon(Icons.Default.GraphicEq, t("Live με φωνή", "Live voice"), tint = accent) }
             IconButton(onSettings) { Icon(Icons.Default.Settings, t("Ρυθμίσεις", "Settings"), tint = C.muted) }
         }
@@ -117,10 +121,27 @@ fun ChatScreen(vm: ChatViewModel, onSettings: () -> Unit, onCustom: () -> Unit, 
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 )
             }
-            items(messages, key = { it.id }) { Bubble(it, accent) }
+            items(messages, key = { it.id }) { m ->
+                Bubble(m, accent, vm.shown(m.text)) {
+                    if (!m.fromUser && !m.pause) {
+                        val i = messages.indexOf(m)
+                        sharing = vm.shown(m.text) to messages.getOrNull(i - 1)?.takeIf { it.fromUser }?.let { vm.shown(it.text) }
+                    }
+                }
+                if (m.sources.isNotBlank()) Sources(m.sources, accent)
+            }
             if (sending) item { Text(t("${c.name} γράφει…", "${c.name} is typing…"), color = C.dim, fontSize = 12.sp, modifier = Modifier.padding(start = 6.dp)) }
         }
         error?.let { Text(it, color = C.danger, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 18.dp, vertical = 4.dp)) }
+        if (messages.isNotEmpty() && !sending) Row(Modifier.padding(start = 14.dp, top = 4.dp)) {
+            Text(
+                t("🔥 Ψήσε με", "🔥 Roast me"), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = accent,
+                modifier = Modifier.clip(RoundedCornerShape(50)).border(1.dp, accent.copy(alpha = 0.5f), RoundedCornerShape(50))
+                    .clickable(role = Role.Button) { vm.roast() }.padding(horizontal = 12.dp, vertical = 6.dp),
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(t("Κράτα πατημένη μια απάντηση για κάρτα", "Long-press a reply for a card"), color = C.dim, fontSize = 11.5.sp, modifier = Modifier.align(Alignment.CenterVertically))
+        }
         Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             TextField(
                 input, { input = it }, Modifier.weight(1f), placeholder = { Text(t("Γράψ' τα όλα…", "Let it all out…")) }, maxLines = 4,
@@ -147,22 +168,43 @@ fun ChatScreen(vm: ChatViewModel, onSettings: () -> Unit, onCustom: () -> Unit, 
         CharacterList(vm, Modifier.heightIn(max = 560.dp), onCustom = { sheet = false; onCustom() }) { vm.pick(it); sheet = false }
     }
     if (pause) SafetyDialog { vm.pause.value = false }
+    sharing?.let { (line, mine) -> ShareDialog(c, line, mine) { sharing = null } }
 }
 
 @Composable
-private fun Bubble(m: Message, accent: Color) {
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+private fun Bubble(m: Message, accent: Color, text: String, onLong: () -> Unit) {
     val me = m.fromUser
     Box(Modifier.fillMaxWidth(), contentAlignment = if (me) Alignment.CenterEnd else Alignment.CenterStart) {
         Text(
-            m.text, fontSize = 14.5.sp, lineHeight = 20.sp,
+            text, fontSize = 14.5.sp, lineHeight = 20.sp,
             color = if (m.pause) C.text else C.text,
             modifier = Modifier.widthIn(max = 300.dp)
                 .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = if (me) 16.dp else 4.dp, bottomEnd = if (me) 4.dp else 16.dp))
                 .background(if (me) Color(0xFF1D2B3D) else if (m.pause) C.panel2 else accent.copy(alpha = 0.14f))
                 .border(1.dp, if (me) Color.Transparent else if (m.pause) C.warn else accent.copy(alpha = 0.4f),
                     RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = if (me) 16.dp else 4.dp, bottomEnd = if (me) 4.dp else 16.dp))
+                .combinedClickable(onClick = {}, onLongClick = onLong, onLongClickLabel = t("Κάρτα για κοινοποίηση", "Card to share"))
                 .padding(horizontal = 12.dp, vertical = 9.dp),
         )
+    }
+}
+
+/** Under a reply that searched Google: the pages it used, and the searches (as Google links). */
+@Composable
+private fun Sources(raw: String, accent: Color) {
+    val context = LocalContext.current
+    val lines = raw.lines().mapNotNull { l -> l.split('\t').takeIf { it.size == 2 } }
+    Row(Modifier.padding(start = 6.dp, top = 2.dp).horizontalScroll(androidx.compose.foundation.rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        lines.forEach { (title, v) ->
+            val q = title == "?"
+            Text(
+                if (q) "G · $v" else title.take(28), fontSize = 11.sp, color = if (q) C.muted else accent,
+                modifier = Modifier.clip(RoundedCornerShape(50)).border(1.dp, C.line, RoundedCornerShape(50))
+                    .clickable(role = Role.Button) { openUrl(context, if (q) "https://www.google.com/search?q=" + java.net.URLEncoder.encode(v, "UTF-8") else v) }
+                    .padding(horizontal = 9.dp, vertical = 4.dp),
+            )
+        }
     }
 }
 
@@ -172,6 +214,19 @@ fun CharacterList(vm: ChatViewModel, modifier: Modifier = Modifier, onCustom: ((
     val current by vm.character.collectAsState()
     val custom = vm.settings.custom()
     LazyColumn(modifier.fillMaxWidth(), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 4.dp)) {
+        item {
+            Row(
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).clickable(role = Role.Button) { vm.dice(); onPick(vm.character.value) }.padding(10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(Modifier.size(34.dp), contentAlignment = Alignment.Center) { Text("🎲", fontSize = 24.sp) }
+                Spacer(Modifier.width(12.dp))
+                Column {
+                    Text(t("Ζάρι", "Dice"), fontWeight = FontWeight.Bold, fontSize = 14.5.sp)
+                    Text(t("Τυχαίος χαρακτήρας, τυχαία ένταση", "Random character, random intensity"), color = C.muted, fontSize = 12.sp)
+                }
+            }
+        }
         items(Characters.all + listOfNotNull(custom), key = { it.id }) { c -> CharacterRow(c, vm.settings.gender(c), c.id == current.id) { onPick(c) } }
         if (onCustom != null) item {
             Row(

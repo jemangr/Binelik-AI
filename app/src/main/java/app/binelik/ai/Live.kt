@@ -55,6 +55,7 @@ interface Conversation {
     var micMuted: Boolean
     var voiceMuted: Boolean
     fun stop()
+    fun interrupt() {}
 }
 
 /** The Gemini Live API messages, without Android, so they can be tested. */
@@ -77,7 +78,7 @@ object LiveProtocol {
         return list[i.mod(list.size)]
     }
 
-    data class Options(val voice: String?, val language: String?, val thinking: String?)
+    data class Options(val voice: String?, val language: String?, val thinking: String?, val search: Boolean = true)
 
     fun setup(model: String, system: String, o: Options): String = buildJsonObject {
         putJsonObject("setup") {
@@ -91,6 +92,8 @@ object LiveProtocol {
                 o.thinking?.let { t -> putJsonObject("thinkingConfig") { put("thinkingLevel", t) } }
             }
             putJsonObject("systemInstruction") { put("parts", buildJsonArray { add(buildJsonObject { put("text", system) }) }) }
+            // Google search, for real answers about the weather, scores, news.
+            if (o.search) put("tools", buildJsonArray { add(buildJsonObject { putJsonObject("googleSearch") {} }) })
             putJsonObject("inputAudioTranscription") {}
             putJsonObject("outputAudioTranscription") {}
         }
@@ -137,6 +140,7 @@ object LiveProtocol {
         o.language != null && reason.contains("language", true) -> o.copy(language = null)
         o.voice != null && reason.contains("voice", true) -> o.copy(voice = null)
         o.thinking == null && reason.contains("thinking", true) -> o.copy(thinking = "low")
+        o.search && (reason.contains("tool", true) || reason.contains("search", true)) -> o.copy(search = false)
         else -> null
     }
 }
@@ -145,7 +149,62 @@ object LiveProtocol {
  * One Live conversation: the microphone goes to Gemini, the character's voice comes back.
  * Runs only while the app is on screen (no microphone in the background).
  */
+/**
+ * Where the voice comes out. A voice conversation uses the phone's «call» audio (for echo
+ * cancellation), which by default goes to the earpiece and is very quiet: so the output goes to
+ * a headset, Bluetooth or the car if one is connected, otherwise the loudspeaker, and the volume
+ * keys change it (4/11: «ακούγεται πολύ σιγά και με την ένταση δεν φτιάχνει»).
+ */
+object Speaker {
+    private var on = false
+
+    fun start(context: android.content.Context) {
+        val am = context.getSystemService(android.media.AudioManager::class.java) ?: return
+        am.mode = android.media.AudioManager.MODE_IN_COMMUNICATION
+        if (android.os.Build.VERSION.SDK_INT >= 31) {
+            val devices = am.availableCommunicationDevices
+            val pick = listOf(
+                android.media.AudioDeviceInfo.TYPE_BLE_HEADSET, android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO,
+                android.media.AudioDeviceInfo.TYPE_WIRED_HEADSET, android.media.AudioDeviceInfo.TYPE_USB_HEADSET,
+                android.media.AudioDeviceInfo.TYPE_BUILTIN_SPEAKER,
+            ).firstNotNullOfOrNull { type -> devices.firstOrNull { it.type == type } }
+            pick?.let { runCatching { am.setCommunicationDevice(it) } }
+        } else {
+            @Suppress("DEPRECATION")
+            if (!am.isWiredHeadsetOn && !am.isBluetoothScoOn) am.isSpeakerphoneOn = true
+        }
+        on = true
+    }
+
+    fun stop(context: android.content.Context) {
+        if (!on) return
+        val am = context.getSystemService(android.media.AudioManager::class.java) ?: return
+        if (android.os.Build.VERSION.SDK_INT >= 31) runCatching { am.clearCommunicationDevice() }
+        else @Suppress("DEPRECATION") { am.isSpeakerphoneOn = false }
+        am.mode = android.media.AudioManager.MODE_NORMAL
+        on = false
+    }
+
+    /** Louder than the phone allows, if asked (Settings → voice volume): PCM16 times [gain], clipped. */
+    fun boost(pcm: ByteArray, gain: Float): ByteArray {
+        if (gain <= 1f) return pcm
+        val out = ByteArray(pcm.size)
+        var i = 0
+        while (i + 1 < pcm.size) {
+            val s = ((pcm[i + 1].toInt() shl 8) or (pcm[i].toInt() and 0xFF)).toShort().toInt()
+            val v = (s * gain).toInt().coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt())
+            out[i] = (v and 0xFF).toByte(); out[i + 1] = (v shr 8).toByte()
+            i += 2
+        }
+        return out
+    }
+
+    /** The gain chosen in the settings: 1, 1.6 or 2.2. */
+    @Volatile var gain = 1f
+}
+
 class LiveSession(
+    private val context: android.content.Context,
     private val key: String,
     private val scope: CoroutineScope,
     private val onEvent: (LiveEvent) -> Unit,
@@ -227,6 +286,7 @@ class LiveSession(
     }
 
     private fun startPlayback() {
+        Speaker.start(context)
         val outSize = AudioTrack.getMinBufferSize(LiveProtocol.OUT_RATE, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT)
         val t = AudioTrack.Builder()
             .setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION).setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build())
@@ -236,7 +296,7 @@ class LiveSession(
         t.play()
         track = t
         playJob = scope.launch(Dispatchers.IO) {
-            for (pcm in playback) { if (closed) break; t.write(pcm, 0, pcm.size) }
+            for (pcm in playback) { if (closed) break; val b = Speaker.boost(pcm, Speaker.gain); t.write(b, 0, b.size) }
         }
     }
 
@@ -244,6 +304,7 @@ class LiveSession(
         micJob?.cancel(); playJob?.cancel()
         runCatching { record?.stop() }; runCatching { record?.release() }; record = null
         runCatching { track?.stop() }; runCatching { track?.release() }; track = null
+        Speaker.stop(context)
         while (playback.tryReceive().isSuccess) Unit
     }
 

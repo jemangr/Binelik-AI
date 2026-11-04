@@ -57,7 +57,12 @@ fun BinelikTheme(content: @Composable () -> Unit) {
         ),
     ) {
         // Text without its own colour is light on the dark background everywhere.
-        androidx.compose.runtime.CompositionLocalProvider(androidx.compose.material3.LocalContentColor provides C.text, content = content)
+        val d = androidx.compose.ui.platform.LocalDensity.current
+        androidx.compose.runtime.CompositionLocalProvider(
+            androidx.compose.material3.LocalContentColor provides C.text,
+            androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(d.density, d.fontScale * app.binelik.i18n.Ui.scale),
+            content = content,
+        )
     }
 }
 

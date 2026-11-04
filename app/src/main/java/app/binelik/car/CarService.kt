@@ -33,6 +33,10 @@ class CarService : CarAppService() {
     override fun onCreateSession(): Session = object : Session() {
         override fun onCreateScreen(intent: Intent): Screen {
             Engine.init(application)
+            // In the car, the taxi driver by default (Settings → Android Auto).
+            if (Engine.settings.carTaxi && !Engine.on && Engine.settings.characterId != "taxitzis") {
+                Engine.settings.characterId = "taxitzis"; Engine.changed()
+            }
             return LiveCarScreen(carContext)
         }
     }

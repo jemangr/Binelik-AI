@@ -43,6 +43,9 @@ fun UpdateBanner(vm: ChatViewModel) {
             Text(t("Έχεις την ${BuildConfig.VERSION_NAME}", "You have ${BuildConfig.VERSION_NAME}"), color = C.muted, fontSize = 12.sp)
         }
         TextButton({ vm.later() }) { Text(t("Αργότερα", "Later"), color = C.muted) }
-        TextButton({ openUrl(context, r.apk) }) { Text(t("Κατέβασμα", "Download"), color = C.amber, fontWeight = FontWeight.Bold) }
+        val dl by vm.downloading.collectAsState()
+        TextButton({ vm.installUpdate(context) }, enabled = dl == null) {
+            Text(dl?.let { "$it%" } ?: t("Ενημέρωση", "Update"), color = C.amber, fontWeight = FontWeight.Bold)
+        }
     }
 }

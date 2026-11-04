@@ -36,8 +36,11 @@ enum class Provider(
 
 data class Turn(val fromUser: Boolean, val text: String)
 
+data class Source(val title: String, val uri: String)
+
 sealed class AiResult {
-    data class Ok(val text: String) : AiResult()
+    /** [sources]: the pages a Google search found; [searches]: what was searched (shown as Google links). */
+    data class Ok(val text: String, val sources: List<Source> = emptyList(), val searches: List<String> = emptyList()) : AiResult()
     data class Fail(val reason: Reason, val detail: String = "") : AiResult()
 }
 
@@ -57,7 +60,9 @@ object Ai {
     /** The last turns sent to the AI: enough for the conversation, small enough to stay cheap. */
     const val HISTORY = 30
 
-    fun geminiBody(system: String, turns: List<Turn>): JsonObject = buildJsonObject {
+    /** [search]: Gemini may search Google for current facts (weather, scores, news) before answering. */
+    fun geminiBody(system: String, turns: List<Turn>, search: Boolean = false): JsonObject = buildJsonObject {
+        if (search) put("tools", buildJsonArray { add(buildJsonObject { put("google_search", buildJsonObject { }) }) })
         put("systemInstruction", buildJsonObject { put("parts", buildJsonArray { add(buildJsonObject { put("text", system) }) }) })
         put("contents", buildJsonArray {
             turns.takeLast(HISTORY).forEach { t ->
@@ -90,6 +95,9 @@ object Ai {
         })
         put("temperature", 1.1)
         put("max_tokens", 400)
+        // Less repetition of the same phrases from turn to turn.
+        put("frequency_penalty", 0.7)
+        put("presence_penalty", 0.5)
     }
 
     /** The reply text in a Gemini answer, or why there is none. */
@@ -100,7 +108,16 @@ object Ai {
         val cand = (o["candidates"] as? JsonArray)?.firstOrNull()?.jsonObject ?: return AiResult.Fail(Reason.OTHER)
         val text = (cand["content"] as? JsonObject)?.get("parts")?.jsonArray
             ?.mapNotNull { (it as? JsonObject)?.get("text")?.jsonPrimitive?.contentOrNull }?.joinToString("")?.trim().orEmpty()
-        if (text.isNotEmpty()) return AiResult.Ok(text)
+        if (text.isNotEmpty()) {
+            val g = cand["groundingMetadata"] as? JsonObject
+            val sources = (g?.get("groundingChunks") as? JsonArray).orEmpty().mapNotNull { ch ->
+                val w = (ch as? JsonObject)?.get("web") as? JsonObject ?: return@mapNotNull null
+                val uri = w["uri"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
+                Source(w["title"]?.jsonPrimitive?.contentOrNull ?: uri, uri)
+            }.distinctBy { it.uri }.take(5)
+            val searches = (g?.get("webSearchQueries") as? JsonArray).orEmpty().mapNotNull { it.jsonPrimitive.contentOrNull }.take(3)
+            return AiResult.Ok(text, sources, searches)
+        }
         val finish = cand["finishReason"]?.jsonPrimitive?.contentOrNull
         return AiResult.Fail(if (finish == "SAFETY" || finish == "PROHIBITED_CONTENT") Reason.BLOCKED else Reason.OTHER, finish ?: "")
     }
@@ -119,12 +136,21 @@ object Ai {
         else -> Reason.OTHER
     }
 
-    suspend fun reply(provider: Provider, key: String, system: String, turns: List<Turn>): AiResult = withContext(Dispatchers.IO) {
+    suspend fun reply(provider: Provider, key: String, system: String, turns: List<Turn>, search: Boolean = true): AiResult {
+        val r = send(provider, key, system, turns, search && provider == Provider.GEMINI)
+        // The Google search has its own daily limit, and not every model takes it: then without it.
+        if (search && provider == Provider.GEMINI && r is AiResult.Fail && (r.detail == "HTTP 400" || r.detail == "HTTP 429")) {
+            return send(provider, key, system, turns, false)
+        }
+        return r
+    }
+
+    private suspend fun send(provider: Provider, key: String, system: String, turns: List<Turn>, search: Boolean): AiResult = withContext(Dispatchers.IO) {
         val req = when (provider) {
             Provider.GEMINI -> Request.Builder()
                 .url("https://generativelanguage.googleapis.com/v1beta/models/$GEMINI_MODEL:generateContent")
                 .header("x-goog-api-key", key)
-                .post(geminiBody(system, turns).toString().toRequestBody(JSON_TYPE))
+                .post(geminiBody(system, turns, search).toString().toRequestBody(JSON_TYPE))
             Provider.DEEPSEEK -> Request.Builder()
                 .url("https://api.deepseek.com/chat/completions")
                 .header("Authorization", "Bearer $key")
@@ -139,6 +165,29 @@ object Ai {
         } catch (e: IOException) {
             AiResult.Fail(Reason.NETWORK, e.message.orEmpty())
         }
+    }
+
+    /**
+     * What is left of a paid balance, as text («1,98 USD»). Only DeepSeek tells it through the API
+     * key; Google shows Gemini's billing only in the Google Cloud console.
+     */
+    suspend fun balance(provider: Provider, key: String): String? = if (provider != Provider.DEEPSEEK) null else withContext(Dispatchers.IO) {
+        runCatching {
+            http.newCall(Request.Builder().url("https://api.deepseek.com/user/balance").header("Authorization", "Bearer $key").get().build()).execute().use { r ->
+                if (!r.isSuccessful) return@use null
+                balanceText(r.body.string())
+            }
+        }.getOrNull()
+    }
+
+    fun balanceText(body: String): String? {
+        val o = runCatching { json.parseToJsonElement(body).jsonObject }.getOrNull() ?: return null
+        val infos = (o["balance_infos"] as? JsonArray).orEmpty().mapNotNull { it as? JsonObject }
+        return infos.mapNotNull { i ->
+            val total = i["total_balance"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
+            val cur = i["currency"]?.jsonPrimitive?.contentOrNull.orEmpty()
+            "${total.replace('.', ',')} $cur".trim()
+        }.joinToString(" · ").ifEmpty { null }
     }
 
     /** Checks a key with the cheapest call there is (the list of models). */

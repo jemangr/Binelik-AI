@@ -5,4 +5,5 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
     <color name="bg">#05080D</color>
+    <color name="notes_bg">#4B5563</color>
 </resources>

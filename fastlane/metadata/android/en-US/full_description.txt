@@ -1,0 +1,17 @@
+Rant and swear, and the character you picked answers its own way: the Brawler, your best mate, your mum, your boss, the taxi driver and 16 more, or your own.
+
+<b>Features</b>
+<ul>
+<li>Voice (Gemini Live, or the phone's voice with DeepSeek) or text</li>
+<li>Three intensity levels, a male or female voice for each character</li>
+<li>Two characters fighting, “Roast me”, the email you won't send</li>
+<li>Swear meter, anger meter, badges, cards to share</li>
+<li>Android Auto (with “unknown sources”), widget, quick settings tile</li>
+<li>Greek and English</li>
+</ul>
+
+<b>Privacy</b>: no server, account, ads or trackers. Bring your own Gemini or DeepSeek key; conversations stay on your phone.
+
+<b>Safety</b>: talk of suicide or a real intent of violence stops the character and shows help numbers.
+
+18+. Not therapy.

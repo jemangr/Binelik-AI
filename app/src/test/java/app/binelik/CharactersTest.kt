@@ -10,10 +10,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CharactersTest {
-    @Test fun thirteenCharactersWithUniqueIdsAndColours() {
-        assertEquals(13, Characters.all.size)
-        assertEquals(13, Characters.all.map { it.id }.toSet().size)
-        assertEquals(13, Characters.all.map { it.color }.toSet().size)
+    @Test fun charactersWithUniqueIdsAndColours() {
+        assertEquals(21, Characters.all.size)
+        assertEquals(21, Characters.all.map { it.id }.toSet().size)
+        assertEquals(21, Characters.all.map { it.color }.toSet().size)
         assertFalse(Characters.all.any { it.id == Characters.CUSTOM_ID })
     }
 
@@ -25,6 +25,7 @@ class CharactersTest {
                 assertTrue(c.id, p.contains(i.rule))
                 assertTrue(c.id, p.contains("1018"))
                 assertTrue(c.id, p.contains(Prompts.PAUSE))
+                assertTrue(c.id, p.contains(Prompts.listen))
             }
         }
     }

@@ -108,3 +108,30 @@ class LiveTest {
         org.junit.Assert.assertTrue(p.contains("Χρήστης: ρε μαλάκα"))
     }
 }
+
+class GroundingTest {
+    @Test fun readsSourcesAndSearches() {
+        val r = Ai.geminiText("""{"candidates":[{"content":{"parts":[{"text":"Αύριο 18 βαθμοί, ρε."}]},
+          "groundingMetadata":{"webSearchQueries":["καιρός Αθήνα αύριο"],"groundingChunks":[{"web":{"uri":"https://x/1","title":"meteo.gr"}},{"web":{"uri":"https://x/1","title":"meteo.gr"}}]}}]}""") as AiResult.Ok
+        assertEquals(listOf(app.binelik.ai.Source("meteo.gr", "https://x/1")), r.sources)
+        assertEquals(listOf("καιρός Αθήνα αύριο"), r.searches)
+    }
+
+    @Test fun searchToolOnlyWhenAsked() {
+        org.junit.Assert.assertTrue("tools" in Ai.geminiBody("s", listOf(Turn(true, "x")), search = true))
+        org.junit.Assert.assertFalse("tools" in Ai.geminiBody("s", listOf(Turn(true, "x"))))
+        val live = kotlinx.serialization.json.Json.parseToJsonElement(app.binelik.ai.LiveProtocol.setup("m", "s", app.binelik.ai.LiveProtocol.Options(null, null, null))).jsonObject["setup"]!!.jsonObject
+        org.junit.Assert.assertTrue("tools" in live)
+        assertEquals(app.binelik.ai.LiveProtocol.Options(null, null, null, search = false), app.binelik.ai.LiveProtocol.retry("Unsupported tool: googleSearch", app.binelik.ai.LiveProtocol.Options(null, null, null)))
+    }
+
+    @Test fun deepseekBalance() {
+        assertEquals("1,98 USD", Ai.balanceText("""{"is_available":true,"balance_infos":[{"currency":"USD","total_balance":"1.98","granted_balance":"0.00","topped_up_balance":"1.98"}]}"""))
+        assertNull(Ai.balanceText("""{"balance_infos":[]}"""))
+    }
+
+    @Test fun promptsAskForRealAnswersWithTheDate() {
+        val p = app.binelik.data.Prompts.system(app.binelik.data.Characters.all.first(), app.binelik.data.Intensity.MEDIUM, "", app.binelik.data.Style(city = "Καλλιθέα"))
+        org.junit.Assert.assertTrue(p.contains("ΠΡΑΓΜΑΤΙΚΗ") && p.contains("Καλλιθέα") && p.contains(java.time.Year.now().toString()))
+    }
+}

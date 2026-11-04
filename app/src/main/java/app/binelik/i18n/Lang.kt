@@ -15,5 +15,10 @@ object Lang {
     val tag: String get() = if (en) "en-US" else "el-GR"
 }
 
+/** The text size chosen in the settings (applied by the theme). */
+object Ui {
+    var scale by mutableStateOf(1f)
+}
+
 /** The Greek or the English text, by the app's language. */
 fun t(el: String, en: String): String = if (Lang.en) en else el

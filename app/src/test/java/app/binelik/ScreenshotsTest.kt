@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.test.core.app.ApplicationProvider
 import app.binelik.data.Characters
+import app.binelik.data.Anger
 import app.binelik.data.Db
 import app.binelik.data.Message
 import app.binelik.ui.BinelikTheme
@@ -23,6 +24,10 @@ import app.binelik.ui.ChatScreen
 import app.binelik.ui.ChatViewModel
 import app.binelik.ui.KeyStep
 import app.binelik.ui.LiveScreen
+import app.binelik.ui.FunScreen
+import app.binelik.ui.StatsScreen
+import app.binelik.ui.FightScreen
+import app.binelik.ui.SettingsScreen
 import app.binelik.ui.Onboarding
 import app.binelik.ui.PrivacyScreen
 import app.binelik.ui.SafetyDialog
@@ -116,6 +121,39 @@ class ScreenshotsTest {
             }
         }
     }
+
+    @Test fun f1_fun() = shot("8-games") { FunScreen(ChatViewModel(app), {}) {} }
+
+    @Test fun f2_fight() {
+        val vm = ChatViewModel(app)
+        val a = Characters.byId("mana")!!; val b = Characters.byId("gynaika")!!
+        vm.fight.value = listOf(
+            ChatViewModel.FightLine(a, "Το παιδί μου τρώει μόνο σπιτικό. Εσύ τι του δίνεις, ντελίβερι;"),
+            ChatViewModel.FightLine(b, "Τίποτα δεν λέω. Ε βέβαια, εσείς ξέρετε καλύτερα."),
+            ChatViewModel.FightLine(null, "Πες της για τα γεμιστά!"),
+            ChatViewModel.FightLine(a, "Τα γεμιστά μου τα θυμάται από τα πέντε του. Τα δικά σου τα θυμάται κανείς;"),
+        )
+        shot("9-fight") { FightScreen(vm) {} }
+    }
+
+    @Test fun f3_stats() {
+        runBlocking {
+            val db = Db.get(app)
+            val now = System.currentTimeMillis()
+            listOf("Ρε μαλάκα, πάλι μου φόρτωσε δουλειά", "Γαμώτο, πάλι κίνηση", "Μαλάκας είναι, σου λέω").forEachIndexed { i, x ->
+                db.messages().add(Message(character = "kollitos", fromUser = true, text = x, time = now - i * 86_400_000L))
+            }
+            db.anger().add(Anger(character = "kollitos", before = 9, after = 3, time = now - 3_600_000))
+            db.anger().add(Anger(character = "kavgatzis", before = 7, after = 4, time = now - 7_200_000))
+        }
+        val vm = ChatViewModel(app)
+        vm.loadStats()
+        val end = System.currentTimeMillis() + 10_000
+        while (vm.stats.value == null && System.currentTimeMillis() < end) { org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle(); Thread.sleep(50) }
+        shot("10-stats") { StatsScreen(vm) {} }
+    }
+
+    @Test fun f4_settings() = shot("11-settings") { SettingsScreen(ChatViewModel(app), {}, {}, {}, {}) }
 
     @Test fun s7_privacy() = shot("7-privacy") { PrivacyScreen {} }
 }

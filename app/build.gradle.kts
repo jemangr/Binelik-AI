@@ -19,6 +19,8 @@ android {
         targetSdk = 36
         versionCode = 4
         versionName = "1.1.0"
+        // F-Droid builds with -PnoUpdateCheck: F-Droid brings its own updates (signed with its key).
+        buildConfigField("boolean", "UPDATE_CHECK", (!project.hasProperty("noUpdateCheck")).toString())
     }
 
     // The release key comes from keystore.properties (git-ignored, written by CI from the repository's
@@ -88,6 +90,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.okhttp)
     implementation(libs.androidx.car.app)
+    implementation(libs.androidx.biometric)
 
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)

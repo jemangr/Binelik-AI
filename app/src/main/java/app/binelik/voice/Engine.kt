@@ -14,6 +14,7 @@ import app.binelik.ai.LiveProtocol
 import app.binelik.ai.LiveSession
 import app.binelik.ai.PhoneVoice
 import app.binelik.ai.Provider
+import app.binelik.ai.Speaker
 import app.binelik.ai.Turn
 import app.binelik.data.Character
 import app.binelik.data.Db
@@ -23,6 +24,7 @@ import app.binelik.data.Message
 import app.binelik.data.Prompts
 import app.binelik.data.Settings
 import app.binelik.i18n.Lang
+import app.binelik.i18n.Ui
 import app.binelik.i18n.t
 import app.binelik.safety.Safety
 import app.binelik.safety.SafetyHit
@@ -69,6 +71,9 @@ object Engine {
         settings = Settings(a)
         keys = KeyVault(a)
         Lang.en = settings.english
+        Ui.scale = settings.textScale
+        PhoneVoice.rate = settings.speechRate
+        Speaker.gain = settings.voiceGain
     }
 
     val on get() = conv != null
@@ -92,20 +97,22 @@ object Engine {
         scope.launch {
             val dao = Db.get(app).messages()
             val recent = dao.forCharacter(c.id).first().filter { !it.pause }.map { it.fromUser to it.text }
-            val system = Prompts.live(c, settings.intensity(c.id), settings.team, recent)
+            val system = Prompts.live(c, settings.intensity(c.id), settings.team, recent, settings.style())
+            startedAt = System.currentTimeMillis()
             conv = if (provider == Provider.GEMINI) {
-                LiveSession(key, scope, ::onEvent, ::onClosed).also {
+                LiveSession(app, key, scope, ::onEvent, ::onClosed).also {
                     it.micMuted = micMuted.value; it.voiceMuted = voiceMuted.value
                     it.start(system, LiveProtocol.Options(LiveProtocol.voiceFor(c, g, settings.voiceIndex(c.id)), Lang.tag, null))
                 }
             } else {
                 // The text AI answers each spoken turn, with the conversation so far.
                 val turns = recent.map { Turn(it.first, it.second) }.toMutableList()
-                val textSystem = Prompts.system(c, settings.intensity(c.id), settings.team)
+                val textSystem = Prompts.system(c, settings.intensity(c.id), settings.team, settings.style())
                 PhoneVoice(app, Lang.tag, g, settings.voiceIndex(c.id), answer = { said0 ->
                     if (Safety.check(said0) != SafetyHit.NONE) { safetyStop(); null }
                     else {
                         turns += Turn(true, said0)
+                        settings.used(provider, text = 1)
                         when (val r = Ai.reply(provider, key, textSystem, turns)) {
                             is AiResult.Ok -> {
                                 if (r.text.startsWith(Prompts.PAUSE)) { safetyStop(); null }
@@ -130,7 +137,10 @@ object Engine {
         if (state.value != LiveState.ERROR) state.value = LiveState.OFF
     }
 
+    private var startedAt = 0L
+
     private fun stopAll() {
+        if (startedAt > 0) { settings.used(settings.provider, liveSeconds = ((System.currentTimeMillis() - startedAt) / 1000).toInt()); startedAt = 0 }
         conv?.let { conv = null; it.stop() }
         LiveService.stop(app)
     }
@@ -140,6 +150,9 @@ object Engine {
         version.value++
         if (conv != null) { stop(); play() }
     }
+
+    /** Tap while it speaks: it stops and listens (the phone's voice; Gemini Live stops by itself when you talk). */
+    fun interrupt() { conv?.interrupt() }
 
     fun toggleMic() { micMuted.value = !micMuted.value; conv?.micMuted = micMuted.value; version.value++ }
     fun toggleVoice() { voiceMuted.value = !voiceMuted.value; conv?.voiceMuted = voiceMuted.value; version.value++ }
@@ -228,9 +241,9 @@ object Engine {
         val line = c.sample.ifEmpty { c.tagline }.ifEmpty { c.name }
         val key = keys.get(Provider.GEMINI)
         if (settings.provider == Provider.GEMINI && key != null) {
-            sample = LiveSession(key, scope, { e -> if (e == LiveEvent.TurnComplete) scope.launch { sample?.stop(); sample = null } }, { sample = null },
+            sample = LiveSession(app, key, scope, { e -> if (e == LiveEvent.TurnComplete) scope.launch { sample?.stop(); sample = null } }, { sample = null },
                 listen = false, firstText = t("Πες ακριβώς αυτή τη φράση, με το ύφος σου: «$line»", "Say exactly this line, in your style: \"$line\"")).also {
-                it.start(Prompts.system(c, settings.intensity(c.id), settings.team), LiveProtocol.Options(LiveProtocol.voiceFor(c, g, voiceIndex), Lang.tag, null))
+                it.start(Prompts.system(c, settings.intensity(c.id), settings.team, settings.style()), LiveProtocol.Options(LiveProtocol.voiceFor(c, g, voiceIndex), Lang.tag, null))
             }
         } else {
             sampleTts?.shutdown()

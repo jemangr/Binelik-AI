@@ -69,7 +69,7 @@ import app.binelik.voice.LiveState
 /** The Live home: the voice circle, Pause/Play in the middle, the two Mutes beside it. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LiveScreen(vm: ChatViewModel, onChat: () -> Unit, onSettings: () -> Unit, onCustom: () -> Unit) {
+fun LiveScreen(vm: ChatViewModel, onChat: () -> Unit, onSettings: () -> Unit, onCustom: () -> Unit, onFun: () -> Unit = {}, autoPlay: Boolean = false) {
     val context = LocalContext.current
     val c by vm.character.collectAsState()
     val intensity by vm.intensity.collectAsState()
@@ -89,9 +89,16 @@ fun LiveScreen(vm: ChatViewModel, onChat: () -> Unit, onSettings: () -> Unit, on
     }
     // Android 13+: the notification with the Pause button while the conversation runs.
     val askNotify = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
-    fun playPause() {
+    // The screen stays on while talking (Settings).
+    val view = androidx.compose.ui.platform.LocalView.current
+    androidx.compose.runtime.DisposableEffect(on) {
+        view.keepScreenOn = on && vm.settings.keepScreenOn
+        onDispose { view.keepScreenOn = false }
+    }
+    // The anger meter: before Play and after Pause (Settings can turn it off).
+    var anger by remember { mutableStateOf<Boolean?>(null) }
+    fun start() {
         when {
-            on -> vm.stopLive()
             !vm.canVoice() -> { vm.liveError.value = t("Δεν υπάρχει κλειδί για το AI. Βάλ' το από τις Ρυθμίσεις.", "There is no AI key. Add it in the Settings."); vm.live.value = LiveState.ERROR }
             ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED -> {
                 vm.play()
@@ -100,6 +107,13 @@ fun LiveScreen(vm: ChatViewModel, onChat: () -> Unit, onSettings: () -> Unit, on
             else -> askMic.launch(Manifest.permission.RECORD_AUDIO)
         }
     }
+    fun playPause() {
+        if (on) { vm.stopLive(); if (vm.settings.angerMeter && vm.angerOpen) anger = false }
+        else if (vm.settings.angerMeter && !vm.angerOpen) anger = true
+        else start()
+    }
+    // From the widget or the quick settings tile: straight into Live.
+    androidx.compose.runtime.LaunchedEffect(autoPlay) { if (autoPlay && !on) start() }
 
     val hud = when (state) {
         LiveState.OFF -> t("ΣΕ ΠΑΥΣΗ · ΠΑΤΑ PLAY", "PAUSED · PRESS PLAY")
@@ -119,13 +133,21 @@ fun LiveScreen(vm: ChatViewModel, onChat: () -> Unit, onSettings: () -> Unit, on
                 modifier = Modifier.border(1.dp, accent.copy(alpha = 0.5f), RoundedCornerShape(6.dp)).padding(horizontal = 5.dp, vertical = 2.dp),
             )
             Spacer(Modifier.weight(1f))
+            IconButton(onFun) { Text("🎲", fontSize = 20.sp) }
             IconButton(onChat) { Icon(Icons.AutoMirrored.Filled.Chat, t("Κουβέντα με κείμενο", "Text chat"), tint = C.muted) }
             IconButton(onSettings) { Icon(Icons.Default.Settings, t("Ρυθμίσεις", "Settings"), tint = C.muted) }
         }
         UpdateBanner(vm)
+        androidx.compose.runtime.LaunchedEffect(Unit) { vm.loadBalance() }
+        val bal by vm.balance.collectAsState()
+        bal?.let { Hud(t("ΥΠΟΛΟΙΠΟ: $it", "BALANCE: $it"), Modifier.align(Alignment.CenterHorizontally)) }
         Hud((if (vm.settings.provider == app.binelik.ai.Provider.GEMINI) "GEMINI LIVE · " else "DEEPSEEK · ") + hud, Modifier.align(Alignment.CenterHorizontally).padding(top = 4.dp).semantics { liveRegion = LiveRegionMode.Polite })
         Box(Modifier.fillMaxWidth().padding(top = 6.dp), contentAlignment = Alignment.Center) {
-            Orb(accent, 250.dp, active = on && !(state == LiveState.LISTENING && mic))
+            // Tap the circle while it speaks to stop it and talk (needed with the phone's voice).
+            Box(Modifier.clip(CircleShape).clickable(enabled = state == LiveState.SPEAKING, role = Role.Button) { app.binelik.voice.Engine.interrupt() }
+                .semantics { contentDescription = t("Διακοπή του χαρακτήρα", "Interrupt the character") }) {
+                Orb(accent, 250.dp, active = on && !(state == LiveState.LISTENING && mic))
+            }
         }
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
             Row(
@@ -180,6 +202,12 @@ fun LiveScreen(vm: ChatViewModel, onChat: () -> Unit, onSettings: () -> Unit, on
         CharacterList(vm, Modifier.heightIn(max = 560.dp), onCustom = { sheet = false; onCustom() }) { vm.pick(it); sheet = false }
     }
     if (pause) SafetyDialog { vm.pause.value = false }
+    anger?.let { before ->
+        AngerDialog(before, accent) { v ->
+            anger = null
+            if (before) { if (v != null) vm.angerBefore(v); start() } else if (v != null) vm.angerAfter(v)
+        }
+    }
 }
 
 @Composable

@@ -73,7 +73,22 @@ fun Screen(title: String, onBack: () -> Unit, content: @Composable () -> Unit) {
 private fun Label(t: String) = Hud(t, Modifier.padding(bottom = 8.dp))
 
 @Composable
-fun SettingsScreen(vm: ChatViewModel, onBack: () -> Unit, onKey: () -> Unit, onCustom: () -> Unit, onPrivacy: () -> Unit) {
+fun SwitchRow(title: String, sub: String, initial: Boolean, onChange: (Boolean) -> Unit) {
+    var on by remember { mutableStateOf(initial) }
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable(role = Role.Switch) { on = !on; onChange(on) }.padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(title, fontSize = 14.5.sp, fontWeight = FontWeight.SemiBold)
+            Text(sub, color = C.dim, fontSize = 12.sp, lineHeight = 16.sp)
+        }
+        androidx.compose.material3.Switch(on, null)
+    }
+}
+
+@Composable
+fun SettingsScreen(vm: ChatViewModel, onBack: () -> Unit, onKey: () -> Unit, onCustom: () -> Unit, onPrivacy: () -> Unit, onLock: (Boolean) -> Unit = {}) {
     val context = LocalContext.current
     val c by vm.character.collectAsState()
     val accent = Color(c.color)
@@ -96,6 +111,26 @@ fun SettingsScreen(vm: ChatViewModel, onBack: () -> Unit, onKey: () -> Unit, onC
                 color = if (vm.keys.has(provider)) C.ok else C.warn, fontSize = 13.sp,
             )
             TextButton(onKey) { Text(t("Άλλαξε ή βάλε κλειδί", "Change or add the key"), color = accent) }
+            androidx.compose.runtime.LaunchedEffect(provider) { vm.loadBalance() }
+            val bal by vm.balance.collectAsState()
+            if (provider == Provider.DEEPSEEK) Text(
+                bal?.let { t("Υπόλοιπο DeepSeek: $it", "DeepSeek balance: $it") } ?: t("Υπόλοιπο: δεν φαίνεται τώρα (internet;)", "Balance: not available right now (internet?)"),
+                color = C.amber, fontWeight = FontWeight.SemiBold, fontSize = 13.5.sp,
+            ) else Text(
+                t("Με κλειδί με billing, το υπόλοιπο και τις χρεώσεις του Gemini τα δείχνει μόνο η Google, στο console του Google Cloud (Billing).", "With a billing key, Gemini's balance and charges are shown only by Google, in the Google Cloud console (Billing)."),
+                color = C.dim, fontSize = 12.sp,
+            )
+            if (provider == Provider.GEMINI) TextButton({ openUrl(context, "https://console.cloud.google.com/billing") }) { Text(t("Άνοιγμα Google Cloud Billing ↗", "Open Google Cloud Billing ↗"), color = accent) }
+            val (texts, secs) = vm.settings.usage(provider)
+            Text(
+                t("Σήμερα: $texts μηνύματα κειμένου · ${secs / 60} λεπτά φωνής (${provider.label})", "Today: $texts text messages · ${secs / 60} minutes of voice (${provider.label})"),
+                color = C.muted, fontSize = 12.5.sp,
+            )
+            Text(
+                if (provider == Provider.GEMINI) t("Τα δωρεάν όρια του Gemini τα ορίζει η Google και αλλάζουν· όταν τα φτάσεις, σου το λέμε.", "Gemini's free limits are set by Google and change; when you reach them, we tell you.")
+                else t("Το DeepSeek χρεώνει από το υπόλοιπό σου· δες το στο platform.deepseek.com.", "DeepSeek charges your balance; see it at platform.deepseek.com."),
+                color = C.dim, fontSize = 12.sp,
+            )
         }
         Panel {
             Label(t("ΓΛΩΣΣΑ / LANGUAGE", "LANGUAGE / ΓΛΩΣΣΑ"))
@@ -103,6 +138,25 @@ fun SettingsScreen(vm: ChatViewModel, onBack: () -> Unit, onKey: () -> Unit, onC
                 app.binelik.i18n.Lang.en = it; vm.settings.english = it; vm.refresh()
             })
             Text(t("Αλλάζουν και οι οθόνες και η γλώσσα που μιλάνε οι χαρακτήρες.", "Both the screens and the language the characters speak change."), color = C.dim, fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
+        }
+        Panel {
+            Label(t("ΟΘΟΝΗ ΚΑΙ ΦΩΝΗ", "SCREEN AND VOICE"))
+            var scale by remember { mutableStateOf(vm.settings.textScale) }
+            Text(t("Μέγεθος γραμμάτων", "Text size"), fontSize = 14.5.sp, fontWeight = FontWeight.SemiBold)
+            Segmented(listOf(1f, 1.15f, 1.3f), scale, { when (it) { 1f -> t("Κανονικά", "Normal"); 1.15f -> t("Μεγάλα", "Large"); else -> t("Πολύ μεγάλα", "Very large") } }, accent, {
+                scale = it; vm.settings.textScale = it; app.binelik.i18n.Ui.scale = it
+            }, Modifier.padding(top = 6.dp, bottom = 10.dp))
+            var gain by remember { mutableStateOf(vm.settings.voiceGain) }
+            Text(t("Ένταση φωνής (πάνω από την ένταση του κινητού)", "Voice volume (on top of the phone's volume)"), fontSize = 14.5.sp, fontWeight = FontWeight.SemiBold)
+            Segmented(listOf(1f, 1.6f, 2.2f), gain, { when (it) { 1f -> t("Κανονική", "Normal"); 1.6f -> t("Δυνατή", "Loud"); else -> t("Πολύ δυνατή", "Very loud") } }, accent, {
+                gain = it; vm.settings.voiceGain = it; app.binelik.ai.Speaker.gain = it
+            }, Modifier.padding(top = 6.dp, bottom = 10.dp))
+            var rate by remember { mutableStateOf(vm.settings.speechRate) }
+            Text(t("Ταχύτητα φωνής του κινητού (DeepSeek)", "Speed of the phone's voice (DeepSeek)"), fontSize = 14.5.sp, fontWeight = FontWeight.SemiBold)
+            Segmented(listOf(0.9f, 1.05f, 1.25f), rate, { when (it) { 0.9f -> t("Αργά", "Slow"); 1.05f -> t("Κανονικά", "Normal"); else -> t("Γρήγορα", "Fast") } }, accent, {
+                rate = it; vm.settings.speechRate = it; app.binelik.ai.PhoneVoice.rate = it
+            }, Modifier.padding(top = 6.dp, bottom = 4.dp))
+            SwitchRow(t("Η οθόνη μένει ανοιχτή στο Live", "Keep the screen on during Live"), t("Αλλιώς σβήνει κανονικά και η κουβέντα συνεχίζει με ειδοποίηση.", "Otherwise it turns off as usual and the conversation goes on with a notification."), vm.settings.keepScreenOn) { vm.settings.keepScreenOn = it }
         }
         Panel {
             Label(t("ΦΩΝΗ: ${c.name.uppercase().noAccents()}", "VOICE: ${c.name.uppercase().noAccents()}"))
@@ -148,6 +202,46 @@ fun SettingsScreen(vm: ChatViewModel, onBack: () -> Unit, onKey: () -> Unit, onC
             )
         }
         Panel {
+            Label(t("Η ΠΟΛΗ ΣΟΥ", "YOUR CITY"))
+            var city by remember { mutableStateOf(vm.settings.city) }
+            OutlinedTextField(city, { city = it.take(60); vm.settings.city = it }, Modifier.fillMaxWidth(), singleLine = true, label = { Text(t("Π.χ. Καλλιθέα, Αθήνα", "E.g. Kallithea, Athens")) })
+            Text(t("Για ερωτήσεις όπως «τι καιρό θα κάνει αύριο». Προαιρετικό· πηγαίνει στο AI μαζί με την ερώτηση.", "For questions like “what's the weather tomorrow”. Optional; it goes to the AI with the question."), color = C.dim, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
+        }
+        Panel {
+            Label(t("ΥΦΟΣ", "STYLE"))
+            var region by remember { mutableStateOf(vm.settings.region) }
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                app.binelik.data.Region.entries.forEach { r ->
+                    val on = r == region
+                    Text(
+                        r.label, color = if (on) Color.Black else C.text, fontWeight = FontWeight.SemiBold, fontSize = 13.sp,
+                        modifier = Modifier.clip(RoundedCornerShape(50)).background(if (on) accent else C.panel2)
+                            .border(1.dp, if (on) accent else C.line, RoundedCornerShape(50))
+                            .clickable(role = Role.RadioButton) { region = r; vm.settings.region = r; vm.refresh() }
+                            .semantics { selected = on }.padding(horizontal = 12.dp, vertical = 8.dp),
+                    )
+                }
+            }
+            Text(t("Το ύφος της περιοχής για όλους τους χαρακτήρες, ελαφριά και με αγάπη.", "A regional flavour for every character, light and with love."), color = C.dim, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
+            SwitchRow(t("Μπιπ (λογοκριμένη τηλεόραση)", "Beep (censored TV)"), t("Οι χαρακτήρες λένε «μπιπ» αντί για βρισιές, και στο κείμενο οι βρισιές γίνονται «μπιπ».", "The characters say \"beep\" instead of swearing, and swear words show as \"beep\"."), vm.settings.bleep) { vm.settings.bleep = it; vm.refresh() }
+        }
+        Panel {
+            Label(t("ΠΑΙΧΝΙΔΙΑ ΚΑΙ ΕΙΔΟΠΟΙΗΣΕΙΣ", "GAMES AND NOTIFICATIONS"))
+            SwitchRow(t("Θυμόμετρο", "Anger meter"), t("Σε ρωτά πόσο θυμωμένος είσαι πριν και μετά το Live.", "Asks how angry you are before and after Live."), vm.settings.angerMeter) { vm.settings.angerMeter = it }
+            SwitchRow(t("Ατάκα της ημέρας", "Line of the day"), t("Μία ειδοποίηση την ημέρα, γύρω στις 11, από τυχαίο χαρακτήρα.", "One notification a day, around 11:00, from a random character."), vm.settings.dailyLine) {
+                vm.settings.dailyLine = it; app.binelik.extras.Daily.schedule(context, it)
+            }
+            SwitchRow(t("Στο αυτοκίνητο ξεκινά ο Ταξιτζής", "In the car, start with the taxi driver"), t("Όταν ανοίγει το Android Auto.", "When Android Auto opens."), vm.settings.carTaxi) { vm.settings.carTaxi = it }
+            Text(t("Ξέσπα τώρα: πρόσθεσε το widget στην αρχική οθόνη, ή το κουμπί στις γρήγορες ρυθμίσεις (σύρε από πάνω → μολύβι).", "Vent now: add the widget to the home screen, or the tile to the quick settings (swipe down → pencil)."), color = C.dim, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
+        }
+        Panel {
+            Label(t("ΑΠΟΡΡΗΤΟ", "PRIVACY"))
+            SwitchRow(t("Κλείδωμα", "Lock"), t("Δαχτυλίδι, πρόσωπο ή το κλείδωμα του κινητού για να ανοίξει η εφαρμογή.", "Fingerprint, face or the phone's lock to open the app."), vm.settings.lock) { want -> onLock(want) }
+            SwitchRow(t("Διακριτικό εικονίδιο", "Discreet icon"), t("Στην αρχική οθόνη φαίνεται «Σημειώσεις» αντί για το Binelik AI. Μπορεί να χρειαστεί λίγα δευτερόλεπτα να αλλάξει.", "The home screen shows \"Notes\" instead of Binelik AI. It may take a few seconds to change."), vm.settings.discreet) {
+                vm.settings.discreet = it; app.binelik.extras.Icon.set(context, it)
+            }
+        }
+        Panel {
             Label(t("Ο ΔΙΚΟΣ ΣΟΥ ΧΑΡΑΚΤΗΡΑΣ", "YOUR OWN CHARACTER"))
             Text(vm.settings.custom()?.name ?: t("Δεν τον έχεις φτιάξει ακόμα.", "You haven't made it yet."), color = C.muted, fontSize = 13.sp)
             TextButton(onCustom) { Text(if (vm.settings.custom() == null) t("Φτιάξε τον", "Make it") else t("Άλλαξέ τον", "Change it"), color = accent) }
@@ -156,7 +250,20 @@ fun SettingsScreen(vm: ChatViewModel, onBack: () -> Unit, onKey: () -> Unit, onC
             Label(t("ΚΟΥΒΕΝΤΕΣ", "CONVERSATIONS"))
             Text(t("Οι κουβέντες σου υπάρχουν μόνο σε αυτό το κινητό.", "Your conversations exist only on this phone."), color = C.muted, fontSize = 13.sp)
             TextButton({ confirm = false }) { Text(t("Σβήσε τις κουβέντες με: ${c.name}", "Delete the conversations with: ${c.name}"), color = C.danger) }
+            val msgs by vm.messages.collectAsState()
+            TextButton({ app.binelik.extras.Share.shareText(context, app.binelik.extras.Share.conversationText(c, msgs.map { it.copy(text = vm.shown(it.text)) })) }, enabled = msgs.isNotEmpty()) {
+                Text(t("Κοινοποίηση της κουβέντας με: ${c.name}", "Share the conversation with: ${c.name}"), color = accent)
+            }
             TextButton({ confirm = true }) { Text(t("Σβήσε όλες τις κουβέντες", "Delete all conversations"), color = C.danger) }
+            var reset by remember { mutableStateOf(false) }
+            TextButton({ reset = true }) { Text(t("Επαναφορά: ρυθμίσεις και κλειδιά", "Reset: settings and keys"), color = C.danger) }
+            if (reset) androidx.compose.material3.AlertDialog(
+                onDismissRequest = { reset = false }, containerColor = C.panel,
+                title = { Text(t("Επαναφορά;", "Reset?")) },
+                text = { Text(t("Σβήνονται όλες οι ρυθμίσεις και τα κλειδιά AI. Οι κουβέντες μένουν (τις σβήνεις χωριστά). Η εφαρμογή ξεκινά από την αρχή.", "All settings and AI keys are deleted. Conversations stay (delete them separately). The app starts over."), color = C.muted) },
+                confirmButton = { TextButton({ vm.stopLive(); vm.settings.resetAll(context); (context as? android.app.Activity)?.recreate() }) { Text(t("Επαναφορά", "Reset"), color = C.danger) } },
+                dismissButton = { TextButton({ reset = false }) { Text(t("Άκυρο", "Cancel"), color = C.muted) } },
+            )
         }
         Panel {
             Label(t("ΝΕΑ ΕΚΔΟΣΗ", "NEW VERSION"))

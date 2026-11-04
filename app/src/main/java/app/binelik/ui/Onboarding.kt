@@ -77,7 +77,7 @@ fun Onboarding(vm: ChatViewModel, onDone: () -> Unit) {
             (1..3).forEach { Box(Modifier.weight(1f).height(4.dp).clip(RoundedCornerShape(2.dp)).background(if (it <= step) blue else C.line)) }
         }
         when (step) {
-            1 -> AdultStep { vm.settings.adult = true; step = 2 }
+            1 -> AdultStep({ vm.settings.english = it }) { vm.settings.adult = true; step = 2 }
             2 -> KeyStep(vm, onSaved = { step = 3 })
             else -> FirstCharacterStep(vm, onDone)
         }
@@ -85,9 +85,11 @@ fun Onboarding(vm: ChatViewModel, onDone: () -> Unit) {
 }
 
 @Composable
-private fun AdultStep(onOk: () -> Unit) {
+private fun AdultStep(onLanguage: (Boolean) -> Unit, onOk: () -> Unit) {
     var adult by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        // The language first, so everything after it is in the right one.
+        Segmented(listOf(false, true), app.binelik.i18n.Lang.en, { if (it) "English" else "Ελληνικά" }, blue, { app.binelik.i18n.Lang.en = it; onLanguage(it) })
         Text(t("Καλώς ήρθες", "Welcome"), fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
         Text(
             t("Εδώ ξεσπάς: τα λες, βρίζεις, και ο χαρακτήρας που διαλέγεις απαντά με τον τρόπο του. Υπάρχουν βρισιές, γι' αυτό είναι μόνο για ενήλικες.", "Here you vent: you rant, you swear, and the character you pick answers in its own way. There's swearing, so it's for adults only."),

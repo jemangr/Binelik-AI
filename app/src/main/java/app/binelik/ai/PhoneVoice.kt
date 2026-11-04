@@ -119,11 +119,20 @@ class PhoneVoice(
 
     override fun stop() = finish(null)
 
+    override fun interrupt() {
+        if (!speaking) return
+        tts?.stop(); speaking = false
+        main.post { onEvent(LiveEvent.TurnComplete); listen() }
+    }
+
     companion object {
         /**
          * The phone's voice for the language: Android doesn't say which voices are male or female,
          * so the choice is by number, and the pitch leans the voice a little lower or higher.
          */
+        /** How fast the phone's voice speaks (Settings). */
+        @Volatile var rate = 1.05f
+
         fun setup(t: TextToSpeech, locale: Locale, gender: Gender, index: Int?) {
             t.language = locale
             val voices: List<Voice> = runCatching { t.voices.orEmpty() }.getOrDefault(emptySet())
@@ -131,7 +140,7 @@ class PhoneVoice(
                 .sortedBy { it.name }
             if (voices.isNotEmpty()) t.voice = voices[(index ?: if (gender == Gender.MALE) 0 else voices.size - 1).mod(voices.size)]
             t.setPitch(if (gender == Gender.MALE) 0.85f else 1.12f)
-            t.setSpeechRate(1.05f)
+            t.setSpeechRate(rate)
         }
     }
 }

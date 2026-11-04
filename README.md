@@ -43,11 +43,34 @@
 | 💙 | **Ο άντρας σου** | «Ναι, ναι, σε ακούω… Τι είπες;» |
 | 💚 | **Οπαδός** | Ζει για την ομάδα του (τη διαλέγεις στις Ρυθμίσεις) |
 | 🌊 | **Το αφεντικό σου** | «Μέρες μετράς εδώ μέσα» |
+| 🌹 | **Η πεθερά** | «Εγώ δεν λέω τίποτα… αλλά το φαγητό θέλει αλάτι» |
+| 🔨 | **Ο γείτονας** | Με το τρυπάνι, Κυριακή πρωί |
+| 🗂️ | **Ο δημόσιος υπάλληλος** | «Έλα αύριο, λείπει ο αρμόδιος» |
+| 👵 | **Η γιαγιά** | «Αδυνάτισες! Έλα να σου φτιάξω κάτι» |
+| 🧔 | **Ο κουνιάδος** | Τα ξέρει όλα, καλύτερα από σένα |
+| 📸 | **Η influencer** | «Αυτό είναι τέλειο για story!» |
+| 🧾 | **Ο λογιστής** | «Τις αποδείξεις τις κράτησες;» |
+| 🎖️ | **Ο Λοχίας** | «ΠΡΟΣΟΧΗ! Τι είναι αυτά, φαντάρε;» |
 | ⚪ | **Ψυχαναλυτής** | «Και πώς σε κάνει να νιώθεις αυτό;» |
 | 🟡 | **Ταξιτζής** | Τα έχει με όλους και έχει άποψη για όλα |
 | ➕ | **Ο δικός σου** | Τον περιγράφεις εσύ: όνομα, ύφος, φωνή, χρώμα |
 
-Κάθε χαρακτήρας έχει τρεις εντάσεις (**ήπια**, **μέτρια**, **βαριά**) και δική του φωνή, ανδρική ή γυναικεία, που την αλλάζεις και την ακούς από τις Ρυθμίσεις («▶ Άκου»).
+Οι χαρακτήρες απαντούν σε αυτά που τους λες, με τον τρόπο τους, χωρίς να επαναλαμβάνουν τα ίδια. Κάθε χαρακτήρας έχει τρεις εντάσεις (**ήπια**, **μέτρια**, **βαριά**) και δική του φωνή, ανδρική ή γυναικεία, που την αλλάζεις και την ακούς από τις Ρυθμίσεις («▶ Άκου»).
+
+## Παιχνίδια (🎲)
+
+- **Καβγάς δύο χαρακτήρων:** π.χ. η μάνα σου με τη γυναίκα σου για το ποιος μαγειρεύει καλύτερα· εσύ ρίχνεις λάδι στη φωτιά.
+- **Ψήσε με:** ο χαρακτήρας σε κράζει με όσα του έχεις πει (με χιούμορ, όχι για να πληγώσει).
+- **Το email που δεν θα στείλεις:** το θυμωμένο, και με ένα κουμπί το ευγενικό που στέλνεται.
+- **Ζάρι:** τυχαίος χαρακτήρας, τυχαία ένταση.
+- **Μπινελικόμετρο, θυμόμετρο** (πριν και μετά το Live), **βραβεία**, σύνοψη της εβδομάδας.
+- **Κάρτα με την ατάκα:** κράτα πατημένη μια απάντηση και μοιράσου την ως εικόνα.
+- **Μπιπ:** οι χαρακτήρες λένε «μπιπ» αντί για βρισιές, σαν λογοκριμένη τηλεόραση. **Ύφος περιοχής:** Αθήνα, Θεσσαλονίκη, Κρήτη, Κύπρος.
+- **Ατάκα της ημέρας** (ειδοποίηση), **widget** και κουμπί στις γρήγορες ρυθμίσεις «Ξέσπα τώρα».
+
+## Ρυθμίσεις
+
+Γλώσσα (Ελληνικά / English), ένταση φωνής (κανονική, δυνατή, πολύ δυνατή), μέγεθος γραμμάτων, ταχύτητα της φωνής του κινητού, η οθόνη ανοιχτή στο Live, **κλείδωμα** με δαχτυλίδι ή PIN, **διακριτικό εικονίδιο** («Σημειώσεις»), ειδοποίηση για νέα έκδοση (η ενημέρωση γίνεται μέσα από την εφαρμογή), πόσο χρησιμοποίησες σήμερα το AI, κοινοποίηση ή σβήσιμο κουβέντας, επαναφορά.
 
 ## Φωνή
 
@@ -106,9 +129,10 @@
 | **0.2** | **Live** με φωνή (Gemini): φωνή ανά χαρακτήρα, Pause/Play, δύο Mute |
 | **0.3** | Φωνή και με το DeepSeek (από το κινητό) · δείγμα φωνής · φωνή με σβηστή οθόνη |
 | **0.4** | Android Auto (με «άγνωστες πηγές») |
-| **1.0** (τώρα) | Αγγλικά (οθόνες και χαρακτήρες) |
+| **1.0** | Αγγλικά (οθόνες και χαρακτήρες) |
+| **1.1** | Ενημέρωση μέσα από την εφαρμογή, 7 νέοι χαρακτήρες, παιχνίδια, στατιστικά, κλείδωμα, δυνατότερη φωνή από το μεγάφωνο |
 
-Επόμενα, αν υπάρξει ενδιαφέρον: περισσότερες γλώσσες, ρολόι, F-Droid.
+Επόμενα, αν υπάρξει ενδιαφέρον: περισσότερες γλώσσες, ρολόι. F-Droid: τα κείμενα και η περιγραφή είναι έτοιμα ([docs/fdroid](docs/fdroid/README.md)).
 
 ## Για developers
 
@@ -137,8 +161,9 @@ Kotlin, Jetpack Compose, Room, OkHttp. Android 10 και μετά.
 <img src="docs/screenshots/en-characters.png" width="220" alt="The characters">
 </p>
 
-**Vent at an AI character.** Binelik AI is an open-source Android app, in Greek and English, where you rant and swear at a character, and it answers in its own way: it fights back, agrees with you, listens patiently, or plays devil's advocate. There are 13 characters plus your own, each with three intensity levels and its own male or female voice.
+**Vent at an AI character.** Binelik AI is an open-source Android app, in Greek and English, where you rant and swear at a character, and it answers in its own way: it fights back, agrees with you, listens patiently, or plays devil's advocate. There are 21 characters plus your own, each with three intensity levels and its own male or female voice.
 
+- **Games:** two characters fighting, "roast me", the angry email you won't send (and the polite one you will), dice, swear meter, anger meter, badges, share cards, beep mode, regional style, line of the day, widget and quick settings tile.
 - **By voice or text:** press Play and talk (Gemini Live, or the phone's voice with DeepSeek), with Pause/Play and two separate mutes (your microphone, its voice). It keeps going with the screen off, and in **Android Auto** (with “unknown sources” on in Android Auto's developer settings).
 
 - **Bring your own key:** Gemini (free key) or DeepSeek. The app opens the key page, and when you copy the key it is picked up automatically.

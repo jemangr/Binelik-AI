@@ -1,0 +1,34 @@
+# Metadata for F-Droid (gitlab.com/fdroid/fdroiddata, file metadata/app.binelik.yml).
+# Submitted by the author with a merge request; see docs/fdroid/README.md.
+Categories:
+  - Games
+  - Connectivity
+License: MIT
+AuthorName: jemangr
+SourceCode: https://github.com/jemangr/Binelik-AI
+IssueTracker: https://github.com/jemangr/Binelik-AI/issues
+Changelog: https://github.com/jemangr/Binelik-AI/releases
+
+AntiFeatures:
+  NonFreeNet:
+    en-US: Talks to Google Gemini or DeepSeek, with the user's own key.
+
+AutoName: Binelik AI
+
+RepoType: git
+Repo: https://github.com/jemangr/Binelik-AI.git
+
+Builds:
+  - versionName: 1.1.0
+    versionCode: 4
+    commit: v1.1.0
+    subdir: app
+    gradle:
+      - yes
+    gradleprops:
+      - noUpdateCheck
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: 1.1.0
+CurrentVersionCode: 4
