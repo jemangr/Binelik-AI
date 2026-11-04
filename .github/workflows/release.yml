@@ -1,9 +1,12 @@
 name: Release
 
-# A tag such as v1.0.0 builds the APK and publishes it as a GitHub release.
+# Each new versionName (app/build.gradle.kts) on main builds the APK and publishes it as a
+# GitHub release v<versionName> (the tag is made here, on GitHub). Can also be run by hand.
 on:
   push:
-    tags: ['v*']
+    branches: [main]
+    paths: ['app/build.gradle.kts']
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -34,11 +37,17 @@ jobs:
       - name: Tests
         run: ./gradlew :app:testDebugUnitTest
       - name: APK
+        id: apk
         run: |
+          v=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
+          echo "version=$v" >> "$GITHUB_OUTPUT"
           ./gradlew :app:assembleRelease
-          cp app/build/outputs/apk/release/app-release.apk "BinelikAI-${GITHUB_REF_NAME}.apk"
+          cp app/build/outputs/apk/release/app-release.apk "BinelikAI-$v.apk"
       - uses: softprops/action-gh-release@v2
         with:
-          files: BinelikAI-${{ github.ref_name }}.apk
+          tag_name: v${{ steps.apk.outputs.version }}
+          name: Binelik AI ${{ steps.apk.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          files: BinelikAI-${{ steps.apk.outputs.version }}.apk
           body_path: docs/RELEASE.md
           prerelease: true
