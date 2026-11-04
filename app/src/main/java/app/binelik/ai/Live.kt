@@ -254,7 +254,13 @@ class LiveSession(
         })
     }
 
-    private fun handle(text: String) {
+    /** An error while handling the server's messages stops the conversation with the error, instead of closing the app. */
+    private fun handle(text: String) = try { handleEvents(text) } catch (e: Throwable) {
+        runCatching { socket?.close(1000, null) }
+        finish("${e.javaClass.simpleName}: ${e.message.orEmpty().take(120)}")
+    }
+
+    private fun handleEvents(text: String) {
         for (e in LiveProtocol.parse(text)) {
             when (e) {
                 LiveEvent.Ready -> { ready = true; startAudio(); firstText?.let { socket?.send(LiveProtocol.text(it)) } }
@@ -271,6 +277,8 @@ class LiveSession(
         if (!listen) { startPlayback(); return }
         val inSize = maxOf(AudioRecord.getMinBufferSize(LiveProtocol.IN_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT), 3200)
         val rec = AudioRecord(MediaRecorder.AudioSource.VOICE_COMMUNICATION, LiveProtocol.IN_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, inSize * 2)
+        // Another app may hold the microphone (a call, a recorder): then the AudioRecord does not open.
+        if (rec.state != AudioRecord.STATE_INITIALIZED) { rec.release(); error("mic-busy") }
         if (AcousticEchoCanceler.isAvailable()) runCatching { AcousticEchoCanceler.create(rec.audioSessionId)?.enabled = true }
         if (NoiseSuppressor.isAvailable()) runCatching { NoiseSuppressor.create(rec.audioSessionId)?.enabled = true }
         record = rec

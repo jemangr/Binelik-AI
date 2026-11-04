@@ -134,4 +134,11 @@ class GroundingTest {
         val p = app.binelik.data.Prompts.system(app.binelik.data.Characters.all.first(), app.binelik.data.Intensity.MEDIUM, "", app.binelik.data.Style(city = "Καλλιθέα"))
         org.junit.Assert.assertTrue(p.contains("ΠΡΑΓΜΑΤΙΚΗ") && p.contains("Καλλιθέα") && p.contains(java.time.Year.now().toString()))
     }
+
+    @Test fun thinkingStaysLowAndLeavesRoomForTheReply() {
+        val g = Ai.geminiBody("s", listOf(Turn(true, "x")))["generationConfig"]!!.jsonObject
+        assertEquals("\"low\"", g["thinkingConfig"]!!.jsonObject["thinkingLevel"].toString())
+        org.junit.Assert.assertTrue(g["maxOutputTokens"].toString().toInt() >= 2048)
+        org.junit.Assert.assertFalse("thinkingConfig" in Ai.geminiBody("s", listOf(Turn(true, "x")), think = false)["generationConfig"]!!.jsonObject)
+    }
 }

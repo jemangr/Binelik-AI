@@ -29,6 +29,7 @@ import app.binelik.i18n.t
 import app.binelik.safety.Safety
 import app.binelik.safety.SafetyHit
 import app.binelik.ui.ChatViewModel
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -48,7 +49,11 @@ object Engine {
     private lateinit var app: Application
     lateinit var settings: Settings; private set
     lateinit var keys: KeyVault; private set
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    /** An error inside the voice conversation stops it with a message, instead of closing the app. */
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main + CoroutineExceptionHandler { _, e ->
+        runCatching { stopAll() }
+        fail(t("Το Live σταμάτησε από σφάλμα (${e.javaClass.simpleName}). Πάτα Play για να ξαναδοκιμάσεις.", "Live stopped on an error (${e.javaClass.simpleName}). Press Play to try again."))
+    })
 
     val state = MutableStateFlow(LiveState.OFF)
     val micMuted = MutableStateFlow(false)
@@ -208,6 +213,7 @@ object Engine {
                 err == "no-recognizer" -> t("Το κινητό δεν έχει αναγνώριση ομιλίας. Εγκατέστησε το Google app ή χρησιμοποίησε Gemini.", "The phone has no speech recognition. Install the Google app or use Gemini.")
                 err == "no-tts" -> t("Το κινητό δεν έχει φωνή κειμένου (TTS).", "The phone has no text-to-speech voice.")
                 err == "mic" -> t("Το Live θέλει το μικρόφωνο.", "Live needs the microphone.")
+                err.contains("mic-busy") -> t("Το μικρόφωνο το έχει άλλη εφαρμογή (κλήση ή εγγραφή). Κλείσ' την και πάτα Play.", "Another app holds the microphone (a call or a recorder). Close it and press Play.")
                 err.contains("401") || err.contains("403") || err.contains("API key", true) -> t("Το κλειδί του Gemini δεν δουλεύει για το Live.", "The Gemini key doesn't work for Live.")
                 err.contains("429") || err.contains("quota", true) || err.contains("exhausted", true) -> t("Έφτασες το δωρεάν όριο του Gemini. Περίμενε λίγο ή δοκίμασε αύριο.", "You reached Gemini's free limit. Wait a little or try tomorrow.")
                 else -> t("Το Live σταμάτησε ($err). Πάτα Play για να συνεχίσεις.", "Live stopped ($err). Press Play to go on.")

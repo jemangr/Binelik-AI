@@ -60,8 +60,12 @@ object Ai {
     /** The last turns sent to the AI: enough for the conversation, small enough to stay cheap. */
     const val HISTORY = 30
 
-    /** [search]: Gemini may search Google for current facts (weather, scores, news) before answering. */
-    fun geminiBody(system: String, turns: List<Turn>, search: Boolean = false): JsonObject = buildJsonObject {
+    /**
+     * [search]: Gemini may search Google for current facts (weather, scores, news) before answering.
+     * [think]: the Gemini 3 models think before answering (medium by default), which is slow and counts
+     * against maxOutputTokens: «low» keeps the replies quick. Older models reject the field.
+     */
+    fun geminiBody(system: String, turns: List<Turn>, search: Boolean = false, think: Boolean = true): JsonObject = buildJsonObject {
         if (search) put("tools", buildJsonArray { add(buildJsonObject { put("google_search", buildJsonObject { }) }) })
         put("systemInstruction", buildJsonObject { put("parts", buildJsonArray { add(buildJsonObject { put("text", system) }) }) })
         put("contents", buildJsonArray {
@@ -82,7 +86,12 @@ object Ai {
                 "HARM_CATEGORY_DANGEROUS_CONTENT" to "BLOCK_MEDIUM_AND_ABOVE",
             ).forEach { (c, t) -> add(buildJsonObject { put("category", c); put("threshold", t) }) }
         })
-        put("generationConfig", buildJsonObject { put("temperature", 1.0); put("maxOutputTokens", 600) })
+        put("generationConfig", buildJsonObject {
+            put("temperature", 1.0)
+            // Room for the thinking as well as the reply (the prompt keeps the replies short).
+            put("maxOutputTokens", 4096)
+            if (think) put("thinkingConfig", buildJsonObject { put("thinkingLevel", "low") })
+        })
     }
 
     fun deepseekBody(system: String, turns: List<Turn>): JsonObject = buildJsonObject {
@@ -136,21 +145,32 @@ object Ai {
         else -> Reason.OTHER
     }
 
+    /** Remembered for the session: the model rejected the thinking level / the Google search. */
+    @Volatile private var noThink = false
+    @Volatile private var noSearch = false
+
     suspend fun reply(provider: Provider, key: String, system: String, turns: List<Turn>, search: Boolean = true): AiResult {
-        val r = send(provider, key, system, turns, search && provider == Provider.GEMINI)
+        if (provider != Provider.GEMINI) return send(provider, key, system, turns, false, false)
+        var r = send(provider, key, system, turns, search && !noSearch, !noThink)
+        // An older model does not take the thinking level: once more without it, and from then on.
+        if (!noThink && r is AiResult.Fail && r.detail == "HTTP 400") {
+            noThink = true
+            r = send(provider, key, system, turns, search && !noSearch, false)
+        }
         // The Google search has its own daily limit, and not every model takes it: then without it.
-        if (search && provider == Provider.GEMINI && r is AiResult.Fail && (r.detail == "HTTP 400" || r.detail == "HTTP 429")) {
-            return send(provider, key, system, turns, false)
+        if (search && !noSearch && r is AiResult.Fail && (r.detail == "HTTP 400" || r.detail == "HTTP 429")) {
+            if (r.detail == "HTTP 400") noSearch = true
+            r = send(provider, key, system, turns, false, !noThink)
         }
         return r
     }
 
-    private suspend fun send(provider: Provider, key: String, system: String, turns: List<Turn>, search: Boolean): AiResult = withContext(Dispatchers.IO) {
+    private suspend fun send(provider: Provider, key: String, system: String, turns: List<Turn>, search: Boolean, think: Boolean): AiResult = withContext(Dispatchers.IO) {
         val req = when (provider) {
             Provider.GEMINI -> Request.Builder()
                 .url("https://generativelanguage.googleapis.com/v1beta/models/$GEMINI_MODEL:generateContent")
                 .header("x-goog-api-key", key)
-                .post(geminiBody(system, turns, search).toString().toRequestBody(JSON_TYPE))
+                .post(geminiBody(system, turns, search, think).toString().toRequestBody(JSON_TYPE))
             Provider.DEEPSEEK -> Request.Builder()
                 .url("https://api.deepseek.com/chat/completions")
                 .header("Authorization", "Bearer $key")

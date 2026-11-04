@@ -15,6 +15,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
@@ -28,7 +31,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
+import app.binelik.extras.Crash
 import app.binelik.extras.EXTRA_PLAY
+import app.binelik.extras.Share
 import app.binelik.i18n.t
 import app.binelik.ui.BinelikTheme
 import app.binelik.ui.C
@@ -53,6 +58,8 @@ class MainActivity : FragmentActivity() {
     private var locked by mutableStateOf(false)
     private var autoPlay by mutableStateOf(false)
     private var leftAt = 0L
+    /** The error the app closed on last time, if any (shown once, to copy and send). */
+    private var crash by mutableStateOf<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,8 +67,10 @@ class MainActivity : FragmentActivity() {
         vm.checkUpdate()
         locked = vm.settings.lock
         autoPlay = intent?.getBooleanExtra(EXTRA_PLAY, false) == true
+        crash = Crash.last(this)
         setContent {
             BinelikTheme {
+                crash?.let { CrashDialog(it) { Crash.clear(this); crash = null } }
                 if (locked) { LockScreen(); return@BinelikTheme }
                 val ready = vm.settings.adult && vm.keys.has(vm.settings.provider)
                 var screen by rememberSaveable { mutableStateOf(if (!ready) "start" else if (vm.canVoice()) "live" else "chat") }
@@ -139,5 +148,29 @@ class MainActivity : FragmentActivity() {
             Text("Binelik AI", fontWeight = FontWeight.ExtraBold, fontSize = 22.sp, modifier = Modifier.padding(vertical = 16.dp))
             PrimaryButton(t("Ξεκλείδωμα", "Unlock"), { unlock() })
         }
+    }
+
+    @androidx.compose.runtime.Composable
+    private fun CrashDialog(report: String, onClose: () -> Unit) {
+        val clip = androidx.compose.ui.platform.LocalClipboardManager.current
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = onClose, containerColor = C.panel,
+            title = { Text(t("Η εφαρμογή έκλεισε απότομα", "The app closed suddenly"), fontWeight = FontWeight.ExtraBold) },
+            text = {
+                Column {
+                    Text(t("Στείλε αυτό το κείμενο στον δημιουργό για να το διορθώσει. Έχει μόνο το τεχνικό σφάλμα, όχι τις κουβέντες σου.",
+                        "Send this text to the developer so it can be fixed. It only has the technical error, not your conversations."), color = C.muted, fontSize = 13.sp)
+                    Text(report, fontSize = 10.sp, color = C.dim, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                        modifier = Modifier.padding(top = 10.dp).heightIn(max = 260.dp).verticalScroll(rememberScrollState()))
+                }
+            },
+            confirmButton = { androidx.compose.material3.TextButton({ Share.shareText(this, report); onClose() }) { Text(t("Κοινοποίηση", "Share"), color = C.amber) } },
+            dismissButton = {
+                androidx.compose.foundation.layout.Row {
+                    androidx.compose.material3.TextButton({ clip.setText(androidx.compose.ui.text.AnnotatedString(report)) }) { Text(t("Αντιγραφή", "Copy"), color = C.muted) }
+                    androidx.compose.material3.TextButton(onClose) { Text(t("Κλείσιμο", "Close"), color = C.muted) }
+                }
+            },
+        )
     }
 }
