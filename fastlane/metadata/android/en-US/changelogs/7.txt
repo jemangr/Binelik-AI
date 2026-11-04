@@ -1,1 +1,1 @@
-Fix: the app closed when asking for the microphone permission (e.g. after the anger meter).
+Fixes: the app closed when asking for the microphone permission (e.g. after the anger meter). When Gemini is overloaded or the connection drops for a moment, it retries by itself.

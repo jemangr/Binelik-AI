@@ -285,7 +285,8 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
             Reason.LIMIT -> if (p == Provider.DEEPSEEK) t("Τέλειωσε το υπόλοιπο ή το όριο στο DeepSeek. Δες το platform.deepseek.com.", "Your DeepSeek balance or limit ran out. See platform.deepseek.com.")
             else t("Έφτασες το δωρεάν όριο του Gemini. Περίμενε λίγο ή δοκίμασε αύριο.", "You reached Gemini's free limit. Wait a little or try tomorrow.")
             Reason.BLOCKED -> t("Το ${p.label} δεν απάντησε σε αυτό (φίλτρο ασφαλείας του). Πες το αλλιώς.", "${p.label} didn't answer that (its safety filter). Say it another way.")
-            Reason.NETWORK -> t("Δεν υπάρχει σύνδεση. Δοκίμασε ξανά.", "No connection. Try again.")
+            Reason.NETWORK -> t("Δεν υπάρχει σύνδεση με το ${p.label} (το δίκτυο του κινητού). Δοκίμασε ξανά.", "No connection to ${p.label} (the phone's network). Try again.")
+            Reason.BUSY -> t("Το ${p.label} έχει φόρτο αυτή τη στιγμή (πρόβλημα της ίδιας της υπηρεσίας). Δοκίμασε σε λίγο.", "${p.label} is overloaded right now (a problem of the service itself). Try again in a moment.")
             Reason.OTHER -> t("Κάτι πήγε στραβά με το ${p.label}. Δοκίμασε ξανά.", "Something went wrong with ${p.label}. Try again.")
         }
     }

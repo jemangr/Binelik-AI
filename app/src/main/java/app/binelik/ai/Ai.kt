@@ -45,17 +45,22 @@ sealed class AiResult {
     data class Fail(val reason: Reason, val detail: String = "") : AiResult()
 }
 
-enum class Reason { BAD_KEY, LIMIT, BLOCKED, NETWORK, OTHER }
+/** [BUSY]: the service is overloaded or down for a moment (HTTP 500/503/504), not the user's fault. */
+enum class Reason { BAD_KEY, LIMIT, BLOCKED, NETWORK, BUSY, OTHER }
 
 object Ai {
     const val GEMINI_MODEL = "gemini-flash-latest"
+    /** Lighter and less busy: used when the main model is overloaded (HTTP 503). */
+    const val GEMINI_FALLBACK = "gemini-flash-lite-latest"
     const val DEEPSEEK_MODEL = "deepseek-chat"
 
     private val json = Json { ignoreUnknownKeys = true }
     private val JSON_TYPE = "application/json; charset=utf-8".toMediaType()
     private val http = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(60, TimeUnit.SECONDS)
+        .readTimeout(40, TimeUnit.SECONDS)
+        // A whole call never waits longer than this; then it is retried or reported.
+        .callTimeout(45, TimeUnit.SECONDS)
         .build()
 
     /** The last turns sent to the AI: enough for the conversation, small enough to stay cheap. */
@@ -143,6 +148,7 @@ object Ai {
         400, 401, 403 -> Reason.BAD_KEY
         402 -> Reason.LIMIT // DeepSeek: no balance left
         429 -> Reason.LIMIT
+        500, 502, 503, 504 -> Reason.BUSY
         else -> Reason.OTHER
     }
 
@@ -168,10 +174,29 @@ object Ai {
         return r
     }
 
-    private suspend fun send(provider: Provider, key: String, system: String, turns: List<Turn>, search: Boolean, think: Boolean): AiResult = withContext(Dispatchers.IO) {
+    /**
+     * 5/11 (report of 1.1.2: «Unable to resolve host», then HTTP 503): a dropped connection or an
+     * overloaded model is retried twice, after 1 and 2 seconds; Gemini then answers with the lighter model.
+     */
+    private suspend fun send(provider: Provider, key: String, system: String, turns: List<Turn>, search: Boolean, think: Boolean): AiResult {
+        val started = System.currentTimeMillis()
+        var model = GEMINI_MODEL
+        var r = sendOnce(provider, key, system, turns, search, think, model)
+        for (wait in listOf(1000L, 2000L)) {
+            if (r !is AiResult.Fail || (r.reason != Reason.NETWORK && r.reason != Reason.BUSY)) break
+            if (System.currentTimeMillis() - started > 30_000) break
+            Report.note(provider.label, "${r.reason} ${r.detail} · retry")
+            kotlinx.coroutines.delay(wait)
+            if (r.reason == Reason.BUSY) model = GEMINI_FALLBACK
+            r = sendOnce(provider, key, system, turns, search, think, model)
+        }
+        return r
+    }
+
+    private suspend fun sendOnce(provider: Provider, key: String, system: String, turns: List<Turn>, search: Boolean, think: Boolean, model: String): AiResult = withContext(Dispatchers.IO) {
         val req = when (provider) {
             Provider.GEMINI -> Request.Builder()
-                .url("https://generativelanguage.googleapis.com/v1beta/models/$GEMINI_MODEL:generateContent")
+                .url("https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent")
                 .header("x-goog-api-key", key)
                 .post(geminiBody(system, turns, search, think).toString().toRequestBody(JSON_TYPE))
             Provider.DEEPSEEK -> Request.Builder()

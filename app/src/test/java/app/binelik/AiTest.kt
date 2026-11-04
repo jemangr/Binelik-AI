@@ -55,7 +55,8 @@ class AiTest {
         assertEquals(Reason.BAD_KEY, Ai.reasonFor(400))
         assertEquals(Reason.LIMIT, Ai.reasonFor(429))
         assertEquals(Reason.LIMIT, Ai.reasonFor(402))
-        assertEquals(Reason.OTHER, Ai.reasonFor(500))
+        assertEquals(Reason.BUSY, Ai.reasonFor(500))
+        assertEquals(Reason.OTHER, Ai.reasonFor(418))
     }
 }
 
@@ -140,5 +141,12 @@ class GroundingTest {
         assertEquals("\"low\"", g["thinkingConfig"]!!.jsonObject["thinkingLevel"].toString())
         org.junit.Assert.assertTrue(g["maxOutputTokens"].toString().toInt() >= 2048)
         org.junit.Assert.assertFalse("thinkingConfig" in Ai.geminiBody("s", listOf(Turn(true, "x")), think = false)["generationConfig"]!!.jsonObject)
+    }
+
+    @Test fun anOverloadedServiceIsBusyNotTheKey() {
+        assertEquals(Reason.BUSY, Ai.reasonFor(503))
+        assertEquals(Reason.BUSY, Ai.reasonFor(500))
+        assertEquals(Reason.LIMIT, Ai.reasonFor(429))
+        assertEquals(Reason.BAD_KEY, Ai.reasonFor(401))
     }
 }
