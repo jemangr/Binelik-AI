@@ -1,5 +1,7 @@
 package app.binelik
 
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -72,11 +74,13 @@ class MainActivity : FragmentActivity() {
     /** A friend's character from a QR or a link, waiting to be saved in a Custom slot. */
     private var imported by mutableStateOf<app.binelik.extras.ShareCharacter.Shared?>(null)
     private var slot by mutableStateOf(1)
+    /** Three strong shakes: «Report a problem» opens (see [Shake]). */
+    private var shaken by mutableStateOf(false)
+    private val shake = app.binelik.extras.Shake { shaken = true }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge(SystemBarStyle.dark(android.graphics.Color.TRANSPARENT), SystemBarStyle.dark(android.graphics.Color.TRANSPARENT))
-        vm.checkUpdate()
         locked = vm.settings.lock
         autoPlay = intent?.getBooleanExtra(EXTRA_PLAY, false) == true
         pickFrom(intent)
@@ -94,6 +98,10 @@ class MainActivity : FragmentActivity() {
                     screen = "custom"
                 }
                 val home = { if (vm.canVoice()) "live" else "chat" }
+                if (shaken) {
+                    shaken = false
+                    if (vm.settings.shakeReport && screen !in setOf("start", "plates", "report")) screen = "report"
+                }
                 val back = when (screen) {
                     "key", "privacy", "report" -> "settings"
                     "fight", "email", "stats", "scream", "plates", "burn", "battle", "rehearsal", "breathe", "group", "packs" -> "fun"
@@ -147,8 +155,13 @@ class MainActivity : FragmentActivity() {
         leftAt = System.currentTimeMillis()
     }
 
+    override fun onResume() { super.onResume(); shake.start(this) }
+    override fun onPause() { super.onPause(); shake.stop() }
+
     override fun onStart() {
         super.onStart()
+        // every time the app comes to the front (at most every hour): a newer version shows as a popup
+        vm.checkUpdate()
         // Locks again after half a minute away (not while a voice conversation runs in the background).
         if (vm.settings.lock && leftAt > 0 && System.currentTimeMillis() - leftAt > 30_000 && !app.binelik.voice.Engine.on) { locked = true; unlock() }
     }
@@ -201,7 +214,14 @@ class MainActivity : FragmentActivity() {
                         modifier = Modifier.padding(top = 10.dp).heightIn(max = 260.dp).verticalScroll(rememberScrollState()))
                 }
             },
-            confirmButton = { androidx.compose.material3.TextButton({ app.binelik.extras.Report.email(this, app.binelik.extras.Report.text(this, vm.settings, t("Η εφαρμογή έκλεισε απότομα.", "The app closed suddenly."))); onClose() }) { Text(t("✉️ Email", "✉️ Email"), color = C.amber) } },
+            confirmButton = { androidx.compose.material3.TextButton({
+                val text = app.binelik.extras.Report.text(this, vm.settings, t("Η εφαρμογή έκλεισε απότομα.", "The app closed suddenly."))
+                lifecycleScope.launch {
+                    if (app.binelik.extras.Report.send(text, "")) android.widget.Toast.makeText(this@MainActivity, t("Στάλθηκε. Ευχαριστώ!", "Sent. Thank you!"), android.widget.Toast.LENGTH_SHORT).show()
+                    else app.binelik.extras.Report.email(this@MainActivity, text)
+                }
+                onClose()
+            }) { Text(t("📤 Αποστολή", "📤 Send"), color = C.amber) } },
             dismissButton = {
                 androidx.compose.foundation.layout.Row {
                     androidx.compose.material3.TextButton({ clip.setText(androidx.compose.ui.text.AnnotatedString(report)) }) { Text(t("Αντιγραφή", "Copy"), color = C.muted) }

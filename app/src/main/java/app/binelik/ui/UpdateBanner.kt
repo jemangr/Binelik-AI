@@ -6,6 +6,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -25,27 +28,36 @@ import androidx.compose.ui.unit.sp
 import app.binelik.BuildConfig
 import app.binelik.i18n.t
 
-/** «Νέα έκδοση X»: download (the APK opens in the browser) or later (not shown again for this one). */
+/**
+ * «Νέα έκδοση X» as a popup on the home screen (Live or chat) as soon as it is found: update (the APK
+ * downloads and Android installs it), later (comes back at the next check) or skip this version.
+ */
 @Composable
 fun UpdateBanner(vm: ChatViewModel) {
     val u by vm.update.collectAsState()
     val r = u ?: return
     val context = LocalContext.current
-    Row(
-        Modifier.padding(horizontal = 12.dp, vertical = 4.dp).fillMaxWidth().clip(RoundedCornerShape(14.dp))
-            .background(C.amber.copy(alpha = 0.12f)).border(1.dp, C.amber.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
-            .padding(start = 14.dp, end = 4.dp, top = 6.dp, bottom = 6.dp)
-            .semantics { liveRegion = LiveRegionMode.Polite },
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(t("Νέα έκδοση ${r.version}", "New version ${r.version}"), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = C.amber)
-            Text(t("Έχεις την ${BuildConfig.VERSION_NAME}", "You have ${BuildConfig.VERSION_NAME}"), color = C.muted, fontSize = 12.sp)
-        }
-        TextButton({ vm.later() }) { Text(t("Αργότερα", "Later"), color = C.muted) }
-        val dl by vm.downloading.collectAsState()
-        TextButton({ vm.installUpdate(context) }, enabled = dl == null) {
-            Text(dl?.let { "$it%" } ?: t("Ενημέρωση", "Update"), color = C.amber, fontWeight = FontWeight.Bold)
-        }
-    }
+    val dl by vm.downloading.collectAsState()
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = { if (dl == null) vm.later() }, containerColor = C.panel,
+        title = { Text(t("Νέα έκδοση ${r.version}", "New version ${r.version}"), fontWeight = FontWeight.ExtraBold, color = C.amber) },
+        text = {
+            Column(Modifier.semantics { liveRegion = LiveRegionMode.Polite }) {
+                Text(t("Έχεις την ${BuildConfig.VERSION_NAME}.", "You have ${BuildConfig.VERSION_NAME}."), color = C.muted, fontSize = 13.sp)
+                if (r.notes.isNotBlank()) Text(r.notes.take(600), color = C.dim, fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp).heightIn(max = 220.dp).verticalScroll(rememberScrollState()))
+                Text(t("Την πρώτη φορά το Android ζητά να επιτρέψεις την εγκατάσταση από το Binelik AI.", "The first time, Android asks you to allow installs from Binelik AI."), color = C.dim, fontSize = 11.5.sp, modifier = Modifier.padding(top = 8.dp))
+            }
+        },
+        confirmButton = {
+            TextButton({ vm.installUpdate(context) }, enabled = dl == null) {
+                Text(dl?.let { "$it%" } ?: t("Ενημέρωση", "Update"), color = C.amber, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TextButton({ vm.skip() }, enabled = dl == null) { Text(t("Παράλειψη", "Skip"), color = C.dim) }
+                TextButton({ vm.later() }, enabled = dl == null) { Text(t("Αργότερα", "Later"), color = C.muted) }
+            }
+        },
+    )
 }

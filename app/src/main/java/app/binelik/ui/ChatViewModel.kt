@@ -103,6 +103,7 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
     /** At start: if allowed and not checked for a few hours. [now] from the settings button. */
     fun checkUpdate(now: Boolean = false) {
         if (!BuildConfig.UPDATE_CHECK) return
+        if (!now && update.value != null) return
         if (!now && (!settings.checkUpdates || System.currentTimeMillis() - settings.lastUpdateCheck < Updates.EVERY_MS)) return
         checking.value = true
         viewModelScope.launch {
@@ -113,7 +114,10 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun later() { update.value?.let { settings.skippedVersion = it.version }; update.value = null }
+    /** «Later»: closed for now; the popup comes back at the next check (every hour). */
+    fun later() { update.value = null }
+    /** «Skip this version»: not shown again until a newer one. */
+    fun skip() { update.value?.let { settings.skippedVersion = it.version }; update.value = null }
 
     /** The paid balance left (DeepSeek), shown in the settings and on the home screen. */
     val balance = MutableStateFlow<String?>(null)

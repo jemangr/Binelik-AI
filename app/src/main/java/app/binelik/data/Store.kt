@@ -100,6 +100,10 @@ class Settings(context: Context) {
     var lastUpdateCheck: Long
         get() = p.getLong("upd_at", 0)
         set(v) = p.edit().putLong("upd_at", v).apply()
+    /** Shake the phone 3 times (outside the games that use shaking) to open «Report a problem» (on by default). */
+    var shakeReport: Boolean
+        get() = p.getBoolean("shake_report", true)
+        set(v) = p.edit().putBoolean("shake_report", v).apply()
     /** A version the user said «later» to: not shown again until a newer one. */
     var skippedVersion: String
         get() = p.getString("upd_skip", null) ?: ""
