@@ -9,7 +9,7 @@
   <a href="https://github.com/jemangr/Binelik-AI/releases/latest/download/BinelikAI.apk"><img src="https://img.shields.io/badge/Download-APK-FFB020?style=for-the-badge&logo=android&logoColor=black" width="230" alt="Download APK"></a>
 </p>
 
-<p align="center">Android · φωνή και κείμενο · Android Auto · ελληνικά και English · ανοιχτός κώδικας (MIT) · δικό σου κλειδί Gemini ή DeepSeek · χωρίς server · 18+</p>
+<p align="center">Android · φωνή και κείμενο · Android Auto · ελληνικά και English · ανοιχτός κώδικας (MIT) · δικό σου κλειδί Gemini ή DeepSeek · χωρίς server · 18+ · <a href="https://platebit.app/ai">platebit.app/ai</a></p>
 
 <p align="center">
 <img src="docs/screenshots/0-live.png" width="200" alt="Το Live με τη Γυναίκα σου">
