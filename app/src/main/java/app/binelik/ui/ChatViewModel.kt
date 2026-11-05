@@ -13,6 +13,7 @@ import app.binelik.data.Anger
 import app.binelik.i18n.Lang
 import app.binelik.extras.Swears
 import app.binelik.ai.AiResult
+import app.binelik.ai.Fallback
 import app.binelik.ai.Provider
 import app.binelik.ai.Reason
 import app.binelik.ai.Turn
@@ -54,6 +55,12 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
     val sending = MutableStateFlow(false)
+    /** 1.3: another AI answered because the chosen one couldn't (shown in one line). */
+    val notice get() = Engine.notice
+
+    /** 1.3: «Ξέχνα με»: the current character forgets what it remembered. */
+    fun forgetMe() { Engine.memory.forget(character.value.id) }
+    fun memoryLines(): List<String> = Engine.memory.lines(character.value.id)
     val error = MutableStateFlow<String?>(null)
     /** Shown over everything when the character steps out of its role for safety. */
     val pause get() = Engine.pause
@@ -148,38 +155,44 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                 return@launch
             }
             val provider = settings.provider
-            val key = keys.get(provider)
-            if (key == null) { error.value = t("Δεν υπάρχει κλειδί για το ${provider.label}. Βάλ' το από τις Ρυθμίσεις.", "There is no ${provider.label} key. Add it in the Settings."); return@launch }
+            if (!keys.has(provider)) { error.value = t("Δεν υπάρχει κλειδί για το ${provider.label}. Βάλ' το από τις Ρυθμίσεις.", "There is no ${provider.label} key. Add it in the Settings."); return@launch }
             sending.value = true
             val turns = messages.value.filter { !it.pause }.map { Turn(it.fromUser, it.text) }
                 .let { if (it.lastOrNull()?.text == tx) it else it + Turn(true, tx) }
-            val system = Prompts.system(c, intensity.value, settings.team, settings.style()) + (if (roastNext) "\n\n" + Prompts.roast else "")
+            val system = Engine.withMemory(c, Prompts.system(c, intensity.value, settings.team, settings.style())) + (if (roastNext) "\n\n" + Prompts.roast else "")
             roastNext = false
-            settings.used(provider, text = 1)
-            when (val r = Ai.reply(provider, key, system, turns)) {
+            val a = Fallback.reply(settings, keys, system, turns)
+            Engine.notice.value = Fallback.notice(a)
+            when (val r = a.result) {
                 is AiResult.Ok -> {
                     val isPause = r.text.startsWith(Prompts.PAUSE)
                     val found = (r.sources.map { "${it.title.replace('\t', ' ')}\t${it.uri}" } + r.searches.map { "?\t$it" }).joinToString("\n")
                     dao.add(Message(character = c.id, fromUser = false, text = r.text.removePrefix(Prompts.PAUSE).trim(), pause = isPause, sources = found))
                     if (isPause) Engine.pause.value = true
+                    else Engine.rememberLater(c, turns + Turn(false, r.text))
+                    app.binelik.extras.Weekly.refreshWidgets(getApplication())
                 }
-                is AiResult.Fail -> error.value = message(r.reason, provider)
+                is AiResult.Fail -> error.value = message(r.reason, a.provider)
             }
             sending.value = false
         }
     }
 
     fun clearHistory(all: Boolean) = viewModelScope.launch {
-        if (all) { dao.deleteAll(); Db.get(getApplication()).anger().deleteAll() } else dao.deleteCharacter(character.value.id)
+        // The memory comes from the conversations, so it goes with them.
+        if (all) { dao.deleteAll(); Db.get(getApplication()).anger().deleteAll(); Engine.memory.forgetAll() }
+        else { dao.deleteCharacter(character.value.id); Engine.memory.forget(character.value.id) }
+        app.binelik.extras.Weekly.refreshWidgets(getApplication())
     }
 
     private suspend fun ask(system: String, turns: List<Turn>): String? {
         val provider = settings.provider
-        val key = keys.get(provider) ?: run { error.value = t("Δεν υπάρχει κλειδί για το ${provider.label}. Βάλ' το από τις Ρυθμίσεις.", "There is no ${provider.label} key. Add it in the Settings."); return null }
-        settings.used(provider, text = 1)
-        return when (val r = Ai.reply(provider, key, system, turns)) {
+        if (!keys.has(provider)) { error.value = t("Δεν υπάρχει κλειδί για το ${provider.label}. Βάλ' το από τις Ρυθμίσεις.", "There is no ${provider.label} key. Add it in the Settings."); return null }
+        val a = Fallback.reply(settings, keys, system, turns)
+        Engine.notice.value = Fallback.notice(a)
+        return when (val r = a.result) {
             is AiResult.Ok -> r.text.removePrefix(Prompts.PAUSE).trim()
-            is AiResult.Fail -> { error.value = message(r.reason, provider); null }
+            is AiResult.Fail -> { error.value = message(r.reason, a.provider); null }
         }
     }
 
@@ -294,7 +307,7 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
         fun message(r: Reason, p: Provider): String = when (r) {
             Reason.BAD_KEY -> t("Το κλειδί του ${p.label} δεν δουλεύει. Έλεγξέ το από τις Ρυθμίσεις.", "The ${p.label} key doesn't work. Check it in the Settings.")
             Reason.LIMIT -> if (p == Provider.DEEPSEEK) t("Τέλειωσε το υπόλοιπο ή το όριο στο DeepSeek. Δες το platform.deepseek.com.", "Your DeepSeek balance or limit ran out. See platform.deepseek.com.")
-            else t("Έφτασες το δωρεάν όριο του Gemini. Περίμενε λίγο ή δοκίμασε αύριο.", "You reached Gemini's free limit. Wait a little or try tomorrow.")
+            else t("Έφτασες το δωρεάν όριο του ${p.label}. Περίμενε λίγο ή δοκίμασε αύριο. Αν βάλεις και δεύτερο κλειδί (π.χ. Groq, δωρεάν), απαντά εκείνο όταν τελειώνει το όριο.", "You reached ${p.label}'s free limit. Wait a little or try tomorrow. With a second key (e.g. Groq, free), that one answers when the limit runs out.")
             Reason.BLOCKED -> t("Το ${p.label} δεν απάντησε σε αυτό (φίλτρο ασφαλείας του). Πες το αλλιώς.", "${p.label} didn't answer that (its safety filter). Say it another way.")
             Reason.NETWORK -> t("Δεν υπάρχει σύνδεση με το ${p.label} (το δίκτυο του κινητού). Δοκίμασε ξανά.", "No connection to ${p.label} (the phone's network). Try again.")
             Reason.MODEL -> t("Το μοντέλο «${app.binelik.voice.Engine.settings.model(p)}» δεν υπάρχει πια στο ${p.label}. Άλλαξέ το από τις Ρυθμίσεις.", "The model “${app.binelik.voice.Engine.settings.model(p)}” no longer exists on ${p.label}. Change it in the Settings.")

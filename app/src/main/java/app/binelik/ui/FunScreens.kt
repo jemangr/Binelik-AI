@@ -283,6 +283,7 @@ fun AngerDialog(before: Boolean, accent: Color, onDone: (Int?) -> Unit) {
 fun ShareDialog(c: Character, line: String, mine: String?, onClose: () -> Unit) {
     val context = LocalContext.current
     var withMine by remember { mutableStateOf(false) }
+    var stickerNote by remember { mutableStateOf<String?>(null) }
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onClose, containerColor = C.panel,
         title = { Text(t("Κάρτα με την ατάκα", "Card with the line"), fontWeight = FontWeight.ExtraBold) },
@@ -293,6 +294,19 @@ fun ShareDialog(c: Character, line: String, mine: String?, onClose: () -> Unit) 
                     androidx.compose.material3.Checkbox(withMine, { withMine = it })
                     Text(t("Μαζί με το δικό μου μήνυμα", "With my own message"), fontSize = 13.5.sp)
                 }
+                // 1.3: the same line as a sticker.
+                Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton({ app.binelik.extras.Stickers.share(context, c, line); onClose() }) { Text(t("Sticker (Viber, WhatsApp…)", "Sticker (Viber, WhatsApp…)"), color = Color(c.color), fontSize = 13.sp) }
+                }
+                if (app.binelik.extras.Stickers.whatsappInstalled(context)) {
+                    TextButton({
+                        val n = app.binelik.extras.Stickers.keep(context, c, line)
+                        if (n >= app.binelik.extras.Stickers.MIN) app.binelik.extras.Stickers.addToWhatsApp(context)
+                        stickerNote = if (n >= app.binelik.extras.Stickers.MIN) t("Μπήκε στο πακέτο «Binelik AI» ($n). Το WhatsApp θα σε ρωτήσει να το προσθέσεις.", "Added to the \"Binelik AI\" pack ($n). WhatsApp will ask you to add it.")
+                        else t("Μπήκε στο πακέτο ($n από ${app.binelik.extras.Stickers.MIN}). Το WhatsApp θέλει τουλάχιστον ${app.binelik.extras.Stickers.MIN} για να το προσθέσει.", "Added to the pack ($n of ${app.binelik.extras.Stickers.MIN}). WhatsApp needs at least ${app.binelik.extras.Stickers.MIN} to add it.")
+                    }) { Text(t("＋ Στα sticker μου στο WhatsApp", "＋ To my WhatsApp stickers"), color = C.muted, fontSize = 13.sp) }
+                }
+                stickerNote?.let { Text(it, color = C.muted, fontSize = 12.sp) }
             }
         },
         confirmButton = { TextButton({ Share.shareCard(context, c, line, if (withMine) mine else null); onClose() }) { Text(t("Κοινοποίηση", "Share"), color = Color(c.color)) } },

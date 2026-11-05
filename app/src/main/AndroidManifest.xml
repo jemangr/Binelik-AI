@@ -31,6 +31,9 @@
         <intent>
             <action android:name="android.intent.action.TTS_SERVICE" />
         </intent>
+        <!-- 1.3: the own sticker pack goes to WhatsApp (if it is installed). -->
+        <package android:name="com.whatsapp" />
+        <package android:name="com.whatsapp.w4b" />
     </queries>
 
     <!-- No backups: the conversations and the key stay on this phone only. -->
@@ -90,6 +93,14 @@
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
         </provider>
 
+        <!-- 1.3: WhatsApp reads the own «Binelik AI» sticker pack from here (only WhatsApp may read it). -->
+        <provider
+            android:name=".extras.StickerProvider"
+            android:authorities="${applicationId}.stickers"
+            android:enabled="true"
+            android:exported="true"
+            android:readPermission="com.whatsapp.sticker.READ" />
+
         <receiver android:name=".extras.DailyReceiver" android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
@@ -102,6 +113,20 @@
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_vent" />
+        </receiver>
+
+        <!-- 1.3: the week's anger meter on the home screen, and Friday's «Πώς πήγε η βδομάδα;». -->
+        <receiver android:name=".extras.WeekWidget" android:exported="false" android:label="@string/week_widget">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_week" />
+        </receiver>
+        <receiver android:name=".extras.WeeklyReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
         </receiver>
 
         <service

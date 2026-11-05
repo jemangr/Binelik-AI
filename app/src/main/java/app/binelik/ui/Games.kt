@@ -74,11 +74,12 @@ class GamesViewModel(application: Application) : AndroidViewModel(application) {
 
     private suspend fun ask(system: String, turns: List<Turn>): String? {
         val p = settings.provider
-        val key = Engine.keys.get(p) ?: run { error.value = t("Δεν υπάρχει κλειδί για το ${p.label}. Βάλ' το από τις Ρυθμίσεις.", "There is no ${p.label} key. Add it in the Settings."); return null }
-        settings.used(p, text = 1)
-        return when (val r = Ai.reply(p, key, system, turns)) {
+        if (!Engine.keys.has(p)) { error.value = t("Δεν υπάρχει κλειδί για το ${p.label}. Βάλ' το από τις Ρυθμίσεις.", "There is no ${p.label} key. Add it in the Settings."); return null }
+        val a = app.binelik.ai.Fallback.reply(settings, Engine.keys, system, turns)
+        Engine.notice.value = app.binelik.ai.Fallback.notice(a)
+        return when (val r = a.result) {
             is AiResult.Ok -> if (r.text.startsWith(Prompts.PAUSE)) { Engine.pause.value = true; null } else r.text
-            is AiResult.Fail -> { error.value = ChatViewModel.message(r.reason, p); null }
+            is AiResult.Fail -> { error.value = ChatViewModel.message(r.reason, a.provider); null }
         }
     }
 

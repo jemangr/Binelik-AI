@@ -29,15 +29,24 @@ class PhoneVoice(
     private val scope: kotlinx.coroutines.CoroutineScope,
     private val onEvent: (LiveEvent) -> Unit,
     private val onClosed: (error: String?) -> Unit,
+    /**
+     * 1.3: the microphone stays open while the phone speaks, and the character stops as soon as the
+     * user talks over it (like Gemini Live). What the phone itself says is not taken as the user.
+     */
+    private val bargeIn: Boolean = false,
 ) : Conversation {
     private val main = Handler(Looper.getMainLooper())
     private var tts: TextToSpeech? = null
     private var recognizer: SpeechRecognizer? = null
     @Volatile private var closed = false
     @Volatile private var speaking = false
+    /** What the phone is saying now (to tell its own voice from the user's). */
+    @Volatile private var saying = ""
+    /** The recogniser is running (so a second start isn't sent while it listens during speech). */
+    @Volatile private var listening = false
 
     override var micMuted = false
-        set(v) { field = v; val keep = pttHold; main.post { if (v) { if (keep) recognizer?.stopListening() else recognizer?.cancel() } else if (!speaking) listen() } }
+        set(v) { field = v; val keep = pttHold; main.post { if (v) { if (keep) recognizer?.stopListening() else { recognizer?.cancel(); listening = false } } else if (!speaking) listen() } }
     override var voiceMuted = false
         set(v) { field = v; if (v) tts?.stop() }
 
@@ -54,7 +63,7 @@ class PhoneVoice(
             val t = tts ?: return@TextToSpeech
             setup(t, Locale.forLanguageTag(languageTag), gender, voiceIndex)
             t.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-                override fun onStart(id: String?) { speaking = true }
+                override fun onStart(id: String?) { speaking = true; if (bargeIn) main.post { listen(duringSpeech = true) } }
                 override fun onDone(id: String?) { speaking = false; main.post { onEvent(LiveEvent.TurnComplete); listen() } }
                 @Deprecated("old API") override fun onError(id: String?) { onDone(id) }
             })
@@ -66,22 +75,33 @@ class PhoneVoice(
         }
     }
 
-    private fun listen() {
-        if (closed || micMuted || speaking) return
+    private fun listen(duringSpeech: Boolean = false) {
+        if (closed || micMuted || (speaking && !(bargeIn && duringSpeech))) return
         val i = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
             .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             .putExtra(RecognizerIntent.EXTRA_LANGUAGE, languageTag)
             .putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-        runCatching { recognizer?.startListening(i) }
+        if (listening) return
+        listening = runCatching { recognizer?.startListening(i) }.isSuccess
     }
 
     private val listener = object : RecognitionListener {
         override fun onPartialResults(b: Bundle?) {
-            b?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()?.let { onEvent(LiveEvent.HeardSoFar(it)) }
+            val text = b?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull() ?: return
+            if (speaking) {
+                // Talking over the character: it stops, and what the user says becomes the next turn.
+                if (!userOver(text, saying)) return
+                tts?.stop(); speaking = false
+                onEvent(LiveEvent.Interrupted)
+            }
+            onEvent(LiveEvent.HeardSoFar(text))
         }
 
         override fun onResults(b: Bundle?) {
+            listening = false
             val text = b?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()?.trim().orEmpty()
+            // While the phone still speaks, what was heard is its own voice: listen again.
+            if (speaking) { if (!userOver(text, saying)) { listen(duringSpeech = true); return }; tts?.stop(); speaking = false; onEvent(LiveEvent.Interrupted) }
             if (text.isEmpty()) { listen(); return }
             onEvent(LiveEvent.HeardSoFar(text))
             scope.launch {
@@ -91,17 +111,19 @@ class PhoneVoice(
                 onEvent(LiveEvent.Said(reply))
                 if (voiceMuted) { onEvent(LiveEvent.TurnComplete); listen(); return@launch }
                 speaking = true
+                saying = reply
                 tts?.speak(reply, TextToSpeech.QUEUE_FLUSH, null, "r${System.nanoTime()}")
             }
         }
 
         override fun onError(error: Int) {
+            listening = false
             if (closed) return
             when (error) {
                 SpeechRecognizer.ERROR_NO_MATCH, SpeechRecognizer.ERROR_SPEECH_TIMEOUT, SpeechRecognizer.ERROR_RECOGNIZER_BUSY,
-                SpeechRecognizer.ERROR_CLIENT -> main.postDelayed({ listen() }, 300)
+                SpeechRecognizer.ERROR_CLIENT -> main.postDelayed({ listen(duringSpeech = speaking) }, 300)
                 SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> finish("mic")
-                else -> main.postDelayed({ listen() }, 1000)
+                else -> main.postDelayed({ listen(duringSpeech = speaking) }, 1000)
             }
         }
 
@@ -132,6 +154,19 @@ class PhoneVoice(
     }
 
     companion object {
+        /**
+         * Is [heard] the user talking over the phone, and not the phone's own voice ([saying]) coming
+         * back through the microphone? At least two words, and most of them not in what it says.
+         */
+        fun userOver(heard: String, saying: String): Boolean {
+            fun words(x: String) = app.binelik.safety.Safety.normalize(x).split(' ').filter { it.length > 1 }
+            val h = words(heard)
+            if (h.size < 2) return false
+            val said = words(saying).toSet()
+            val mine = h.count { it !in said }
+            return mine * 2 > h.size
+        }
+
         /**
          * The phone's voice for the language: Android doesn't say which voices are male or female,
          * so the choice is by number, and the pitch leans the voice a little lower or higher.

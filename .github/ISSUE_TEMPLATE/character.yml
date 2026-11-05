@@ -1,0 +1,38 @@
+name: "🎭 Πρότεινε χαρακτήρα / Suggest a character"
+description: "Ένας νέος χαρακτήρας για τα πακέτα. Ψήφισε με 👍 όσους σου αρέσουν: κάθε μήνα μπαίνει αυτός με τις περισσότερες ψήφους. / A new character for the packs. Vote with 👍: every month the most voted one goes in."
+title: "Χαρακτήρας: "
+labels: ["χαρακτήρας"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Κάθε μήνα ο χαρακτήρας με τα περισσότερα 👍 μπαίνει στα πακέτα (`packs/characters.json`) και εμφανίζεται στην εφαρμογή χωρίς νέα έκδοση.
+        Every month the character with the most 👍 goes into the packs and shows up in the app without a new version.
+
+        **Δεν μπαίνουν / Not accepted:** πραγματικά πρόσωπα με όνομα, σεξουαλικοί χαρακτήρες, προσβολές για καταγωγή, θρησκεία, φύλο, σεξουαλικό προσανατολισμό ή αναπηρία. / real named people, sexual characters, insults about origin, religion, gender, sexual orientation or disability.
+  - type: input
+    id: name
+    attributes:
+      label: "Όνομα / Name"
+      placeholder: "π.χ. Ο ντελιβεράς / e.g. The delivery guy"
+    validations:
+      required: true
+  - type: textarea
+    id: style
+    attributes:
+      label: "Πώς μιλάει / How it talks"
+      description: "2–4 προτάσεις: τι τον χαρακτηρίζει, πώς απαντά όταν τον βρίζεις. / 2–4 sentences: what it's like, how it answers when you swear at it."
+    validations:
+      required: true
+  - type: input
+    id: line
+    attributes:
+      label: "Μια ατάκα του / One of its lines"
+      placeholder: "«Έρχομαι σε 5 λεπτά, είμαι στη γωνία!»"
+  - type: dropdown
+    id: voice
+    attributes:
+      label: "Φωνή / Voice"
+      options:
+        - "Ανδρική / Male"
+        - "Γυναικεία / Female"

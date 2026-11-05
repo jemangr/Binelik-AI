@@ -79,6 +79,7 @@ fun LiveScreen(vm: ChatViewModel, onChat: () -> Unit, onSettings: () -> Unit, on
     val mic by vm.micMuted.collectAsState()
     val voice by vm.voiceMuted.collectAsState()
     val err by vm.liveError.collectAsState()
+    val notice by vm.notice.collectAsState()
     val heard by vm.heardLine.collectAsState()
     val said by vm.saidLine.collectAsState()
     val pause by vm.pause.collectAsState()
@@ -196,6 +197,7 @@ fun LiveScreen(vm: ChatViewModel, onChat: () -> Unit, onSettings: () -> Unit, on
                         .padding(horizontal = 12.dp, vertical = 8.dp).semantics { liveRegion = LiveRegionMode.Polite },
                 )
             }
+            if (err == null) notice?.let { Text("↪ $it", color = C.muted, fontSize = 12.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 24.dp).fillMaxWidth()) }
         }
         Spacer(Modifier.weight(1f))
         // Push to talk (Settings): hold to speak, let go and it answers.

@@ -83,6 +83,16 @@
 - **Μπιπ:** οι χαρακτήρες λένε «μπιπ» αντί για βρισιές, σαν λογοκριμένη τηλεόραση. **Ύφος περιοχής:** Αθήνα, Θεσσαλονίκη, Κρήτη, Κύπρος.
 - **Ατάκα της ημέρας** (ειδοποίηση), **widget** και κουμπί στις γρήγορες ρυθμίσεις «Ξέσπα τώρα».
 
+## Νέα στην 1.3
+
+- **Οι χαρακτήρες θυμούνται.** Κάθε χαρακτήρας κρατά έως 4 σύντομα πράγματα από τις κουβέντες σας («πάλι το αφεντικό;»). Μένουν μόνο στο κινητό, χωρίς ονόματα, υγεία ή κάτι προσωπικό. Τα βλέπεις από το «🧠 Τι θυμάται» και τα σβήνεις με το «Ξέχνα με».
+- **Δεύτερο AI.** Αν τελειώσει το δωρεάν όριο του Gemini ή έχει φόρτο, απαντά το Groq ή όποιο άλλο έχεις βάλει κλειδί, και η εφαρμογή σού το λέει σε μία γραμμή.
+- **Τον διακόπτεις όταν μιλάς**, και χωρίς Gemini: με Groq, OpenRouter και DeepSeek το μικρόφωνο μένει ανοιχτό και ο χαρακτήρας σταματά μόλις μιλήσεις. Δουλεύει καλύτερα με ακουστικά.
+- **Δοκιμή 30″ χωρίς κλειδί**, πριν από το Google AI Studio.
+- **Sticker:** κράτα πατημένη μια απάντηση → «Sticker» για Viber, WhatsApp, Messenger. Ή «＋ Στα sticker μου στο WhatsApp», για δικό σου πακέτο «Binelik AI» (από 3 sticker και πάνω).
+- **Widget «Θυμόμετρο εβδομάδας»** και ειδοποίηση την Παρασκευή: «Πώς πήγε η βδομάδα;».
+- **Πρότεινε χαρακτήρα:** [άνοιξε πρόταση](../../issues/new?template=character.yml) και ψήφισε με 👍. Κάθε μήνα ο χαρακτήρας με τις περισσότερες ψήφους μπαίνει στα πακέτα, χωρίς νέα έκδοση.
+
 ## Ρυθμίσεις
 
 AI (Gemini, DeepSeek, Groq, OpenRouter, και το μοντέλο), γλώσσα (Ελληνικά / English), **πατάς και μιλάς** (walkie-talkie), **πρόσωπο** στον κύκλο που κουνάει το στόμα με τη φωνή, **ήχοι χαρακτήρων** (κόρνα, σφυρίχτρα, γήπεδο…), ένταση φωνής (κανονική, δυνατή, πολύ δυνατή), μέγεθος γραμμάτων, ταχύτητα της φωνής του κινητού, η οθόνη ανοιχτή στο Live, **κλείδωμα** με δαχτυλίδι ή PIN, **διακριτικό εικονίδιο** («Σημειώσεις»), ειδοποίηση για νέα έκδοση (η ενημέρωση γίνεται μέσα από την εφαρμογή), πόσο χρησιμοποίησες σήμερα το AI, κοινοποίηση ή σβήσιμο κουβέντας, επαναφορά.
@@ -146,6 +156,7 @@ AI (Gemini, DeepSeek, Groq, OpenRouter, και το μοντέλο), γλώσσ�
 | **0.4** | Android Auto (με «άγνωστες πηγές») |
 | **1.0** | Αγγλικά (οθόνες και χαρακτήρες) |
 | **1.1** | Ενημέρωση μέσα από την εφαρμογή, 8 νέοι χαρακτήρες, παιχνίδια, στατιστικά, κλείδωμα, δυνατότερη φωνή από το μεγάφωνο, αναφορά προβλήματος |
+| **1.3** | Μνήμη χαρακτήρων, δεύτερο AI, διακοπή με φωνή χωρίς Gemini, δοκιμή χωρίς κλειδί, sticker, widget εβδομάδας, ψηφοφορία χαρακτήρων |
 | **1.2** | Ουρλιαχτόμετρο, πιάτα, κάψ' το, κόντρα βρισιών, πρόβα, αναπνοές, ημερολόγιο θυμού, ομαδική κουβέντα, 2 custom με QR, πακέτα χαρακτήρων από το GitHub, πρόσωπο στον κύκλο, πατάς και μιλάς, συντομεύσεις, Groq και OpenRouter, ήχοι χαρακτήρων |
 
 Επόμενα, αν υπάρξει ενδιαφέρον: περισσότερες γλώσσες, ρολόι. F-Droid: τα κείμενα και η περιγραφή είναι έτοιμα ([docs/fdroid](docs/fdroid/README.md)).
@@ -185,6 +196,7 @@ Kotlin, Jetpack Compose, Room, OkHttp. Android 10 και μετά.
 - **By voice or text:** press Play and talk (Gemini Live, or the phone's voice with DeepSeek), with Pause/Play and two separate mutes (your microphone, its voice). It keeps going with the screen off, and in **Android Auto** (with “unknown sources” on in Android Auto's developer settings).
 
 - **Bring your own key:** Gemini (free key), DeepSeek, Groq (free) or OpenRouter (free “:free” models). Push to talk, a face in the voice circle, character sounds, icon shortcuts. The app opens the key page, and when you copy the key it is picked up automatically.
+- **New in 1.3:** the characters remember a few things from earlier talks ("the boss again?", only on the phone, with "Forget me"); a second AI answers when your free limit runs out; talk over the character to interrupt it, without Gemini too; a 30-second try without a key; stickers for Viber and WhatsApp (and your own WhatsApp pack); a "Week's anger meter" widget and "How did the week go?" on Fridays; [suggest a character](../../issues/new?template=character.yml) and vote with 👍.
 - **Nothing kept:** no server, no account, no analytics. Conversations stay on your phone and are excluded from Android backups. The key is encrypted with the Android Keystore.
 - **Safety:** mentions of suicide or self-harm, and real intent of violence, stop the character at once and show help numbers. The check runs on the phone before anything reaches the AI.
 - **Install:** [download BinelikAI.apk](https://github.com/jemangr/Binelik-AI/releases/latest/download/BinelikAI.apk) on your phone, open it and allow “install unknown apps”.

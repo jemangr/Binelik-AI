@@ -1,6 +1,6 @@
 # Πολιτική απορρήτου: Binelik AI
 
-*Τελευταία ενημέρωση: 5 Νοεμβρίου 2026. Το ίδιο κείμενο υπάρχει και μέσα στην εφαρμογή (Ρυθμίσεις → Πολιτική απορρήτου).*
+*Τελευταία ενημέρωση: 5 Νοεμβρίου 2026 (1.3). Το ίδιο κείμενο υπάρχει και μέσα στην εφαρμογή (Ρυθμίσεις → Πολιτική απορρήτου).*
 
 ## Δεν κρατάμε τίποτα
 Το Binelik AI δεν έχει δικό του server. Δεν υπάρχει λογαριασμός, εγγραφή, διαφημίσεις, analytics ή trackers. Ο δημιουργός δεν βλέπει τίποτα από όσα γράφεις.
@@ -30,6 +30,13 @@
 - **Περισσότεροι χαρακτήρες**: όταν ανοίγεις τη σελίδα, η εφαρμογή κατεβάζει τη λίστα από το GitHub του Binelik AI (`raw.githubusercontent.com`). Δεν στέλνεται τίποτα δικό σου.
 - **Δικός σου χαρακτήρας με QR ή link**: όλος ο χαρακτήρας είναι μέσα στο link· δεν περνάει από κανέναν server. Το στέλνεις εσύ.
 - **Συντομεύσεις στο εικονίδιο**: δείχνουν τους 3 χαρακτήρες που μιλάς πιο συχνά· τις βλέπει μόνο το κινητό σου.
+
+## Μνήμη, δεύτερο AI, sticker και widget (1.3)
+- **Μνήμη χαρακτήρων:** κάθε χαρακτήρας κρατά έως 4 σύντομες γραμμές για το τι σε εκνευρίζει (π.χ. «το αφεντικό με τις υπερωρίες»). Τις γράφει **το AI σου**, από την κουβέντα που ήδη του στέλνεις, κάθε λίγα μηνύματα. Μένουν **μόνο στο κινητό** και μπαίνουν στις οδηγίες του ίδιου χαρακτήρα. Η εφαρμογή πετά γραμμές με ονόματα, τηλέφωνα, links ή κάτι για αυτοκτονία και αυτοτραυματισμό. Τις βλέπεις και τις σβήνεις από το «🧠 Τι θυμάται» → «Ξέχνα με», ή όλες από τις Ρυθμίσεις. Σβήνονται και μαζί με τις κουβέντες. Κλείνει από τις Ρυθμίσεις.
+- **Δεύτερο AI:** αν το AI που διάλεξες δεν απαντά (όριο, φόρτος), η ίδια ερώτηση πηγαίνει σε άλλο AI για το οποίο **έχεις βάλει εσύ κλειδί**, και η εφαρμογή το γράφει. Ισχύει η πολιτική εκείνης της υπηρεσίας. Κλείνει από τις Ρυθμίσεις.
+- **Δοκιμή χωρίς κλειδί:** έτοιμες απαντήσεις μέσα στην εφαρμογή. Δεν στέλνεται τίποτα.
+- **Sticker:** φτιάχνονται στο κινητό. Αν τα βάλεις στο πακέτο «Binelik AI» του WhatsApp, μένουν σε φάκελο της εφαρμογής και τα διαβάζει **μόνο το WhatsApp**, όταν του τα δώσεις.
+- **Θυμόμετρο εβδομάδας (widget) και «Πώς πήγε η βδομάδα;»:** υπολογίζονται στο κινητό, χωρίς AI και χωρίς internet.
 
 ## Κλείδωμα και διακριτικό εικονίδιο
 Το κλείδωμα χρησιμοποιεί το δαχτυλίδι, το πρόσωπο ή το κλείδωμα οθόνης του Android· η εφαρμογή δεν βλέπει τα αποτυπώματά σου. Το διακριτικό εικονίδιο δείχνει «Σημειώσεις» στην αρχική οθόνη.
@@ -62,4 +69,4 @@
 ---
 
 ### English summary
-Binelik AI has no server and keeps nothing: no account, ads, analytics or trackers. Groq (USA) and OpenRouter (USA, then the model's company) are also available, under their policies. The scream meter only measures loudness on the phone; character packs are downloaded from GitHub only when you open that page; a shared character travels inside its own link. Conversations (text only, never audio) stay on your phone and are excluded from Android backups; the key is encrypted with the Android Keystore. What you say goes straight from your phone to the AI you chose (Google Gemini, or DeepSeek in China) with your own key, under their policies; with a free Gemini key Google may use conversations to improve its products. With DeepSeek, your phone's speech recognition hears your voice and only text goes to DeepSeek. The safety check runs on the phone. If left on, the app asks GitHub at most every 6 hours for the latest version (nothing of yours is sent). Permissions: internet, microphone (only for voice), notifications (the Pause button). 18+, not therapy.
+Binelik AI has no server and keeps nothing: no account, ads, analytics or trackers. Groq (USA) and OpenRouter (USA, then the model's company) are also available, under their policies. The scream meter only measures loudness on the phone; character packs are downloaded from GitHub only when you open that page; a shared character travels inside its own link. Conversations (text only, never audio) stay on your phone and are excluded from Android backups; the key is encrypted with the Android Keystore. What you say goes straight from your phone to the AI you chose (Google Gemini, or DeepSeek in China) with your own key, under their policies; with a free Gemini key Google may use conversations to improve its products. With DeepSeek, your phone's speech recognition hears your voice and only text goes to DeepSeek. The safety check runs on the phone. If left on, the app asks GitHub at most every 6 hours for the latest version (nothing of yours is sent). 1.3: each character may keep up to 4 short lines about what annoys you, written by your own AI from the conversation and kept only on the phone (no names, numbers or self-harm; "Forget me" and a switch in the Settings). When your AI can't answer (limit, load), another AI you gave a key to answers, and the app says so. Stickers are made on the phone; the WhatsApp pack is read only by WhatsApp when you add it. The week's meter and Friday's note are computed on the phone. Permissions: internet, microphone (only for voice), notifications (the Pause button, the line of the day, Friday's note). 18+, not therapy.

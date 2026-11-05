@@ -68,6 +68,8 @@ private val blue = Color(0xFF4DA3FF)
 @Composable
 fun Onboarding(vm: ChatViewModel, onDone: () -> Unit) {
     var step by remember { mutableStateOf(if (vm.settings.adult) 2 else 1) }
+    // 1.3: the 30-second try without a key, once, before the key step.
+    var demo by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxSize().background(C.bg).systemBarsPadding().imePadding().padding(horizontal = 20.dp)) {
         Row(Modifier.fillMaxWidth().padding(vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
             Logo(30.dp); Spacer(Modifier.width(8.dp))
@@ -79,7 +81,8 @@ fun Onboarding(vm: ChatViewModel, onDone: () -> Unit) {
         }
         when (step) {
             1 -> AdultStep({ vm.settings.english = it }) { vm.settings.adult = true; step = 2 }
-            2 -> KeyStep(vm, onSaved = { step = 3 })
+            2 -> if (demo) DemoScreen { demo = false; vm.settings.triedDemo = true }
+                else KeyStep(vm, onSaved = { step = 3 }, onDemo = if (vm.settings.triedDemo) null else ({ demo = true }))
             else -> FirstCharacterStep(vm, onDone)
         }
     }
@@ -121,7 +124,7 @@ private enum class KeyState { WAITING, TESTING, OK, BAD, NET }
 
 /** The key, as simple as it gets: a button to the key page, then the app picks the copied key up by itself. */
 @Composable
-fun KeyStep(vm: ChatViewModel, onSaved: () -> Unit) {
+fun KeyStep(vm: ChatViewModel, onSaved: () -> Unit, onDemo: (() -> Unit)? = null) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var provider by remember { mutableStateOf(vm.settings.provider) }
@@ -166,6 +169,10 @@ fun KeyStep(vm: ChatViewModel, onSaved: () -> Unit) {
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(t("Βάλε το κλειδί σου", "Add your key"), fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
+        if (onDemo != null) Text(
+            t("▶ Δοκίμασε πρώτα χωρίς κλειδί (30″)", "▶ Try it first without a key (30″)"), color = blue, fontWeight = FontWeight.Bold, fontSize = 14.sp,
+            modifier = Modifier.clip(RoundedCornerShape(50)).border(1.dp, blue.copy(alpha = 0.5f), RoundedCornerShape(50)).clickable { onDemo() }.padding(horizontal = 14.dp, vertical = 8.dp),
+        )
         ProviderPicker(provider, blue) { provider = it; state = if (vm.keys.has(it)) KeyState.OK else KeyState.WAITING; shown = "" }
         StepLine(1, t("Πάτα το κουμπί και φτιάξε κλειδί", "Press the button and make a key"),
             when (provider) {

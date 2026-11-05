@@ -23,6 +23,9 @@ import app.binelik.data.Db
 import app.binelik.data.Gender
 import app.binelik.data.KeyVault
 import app.binelik.data.Message
+import app.binelik.data.Memory
+import app.binelik.ai.Fallback
+import app.binelik.extras.Weekly
 import app.binelik.data.Prompts
 import app.binelik.data.Settings
 import app.binelik.i18n.Lang
@@ -51,6 +54,10 @@ object Engine {
     private lateinit var app: Application
     lateinit var settings: Settings; private set
     lateinit var keys: KeyVault; private set
+    /** 1.3: what each character remembers (only on the phone). */
+    lateinit var memory: Memory; private set
+    /** 1.3: one line when another AI answered because the chosen one couldn't (limit, load). */
+    val notice = MutableStateFlow<String?>(null)
     /** An error inside the voice conversation stops it with a message, instead of closing the app. */
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main + CoroutineExceptionHandler { _, e ->
         runCatching { stopAll() }
@@ -77,10 +84,32 @@ object Engine {
         app = a
         settings = Settings(a)
         keys = KeyVault(a)
+        memory = Memory(a)
         Lang.en = settings.english
         Ui.scale = settings.textScale
         PhoneVoice.rate = settings.speechRate
         Speaker.gain = settings.voiceGain
+    }
+
+    /** The character's instructions with what it remembers (if memory is on). */
+    fun withMemory(c: Character, system: String): String {
+        if (!settings.memory) return system
+        val part = Memory.promptPart(memory.lines(c.id))
+        return if (part.isEmpty()) system else system + "\n\n" + part
+    }
+
+    /**
+     * After the user's message to [c]: every few messages the memory is written again by the AI,
+     * quietly in the background (a failure changes nothing).
+     */
+    fun rememberLater(c: Character, turns: List<Turn>) {
+        if (!settings.memory || !memory.countTurn(c.id)) return
+        scope.launch {
+            val old = memory.lines(c.id)
+            val a = Fallback.reply(settings, keys, Memory.updatePrompt(old), Memory.transcript(turns), search = false)
+            val r = a.result
+            if (r is AiResult.Ok) memory.save(c.id, Memory.parse(r.text))
+        }
     }
 
     val on get() = conv != null
@@ -107,7 +136,7 @@ object Engine {
         scope.launch {
             val dao = Db.get(app).messages()
             val recent = dao.forCharacter(c.id).first().filter { !it.pause }.map { it.fromUser to it.text }
-            val system = Prompts.live(c, settings.intensity(c.id), settings.team, recent, settings.style())
+            val system = withMemory(c, Prompts.live(c, settings.intensity(c.id), settings.team, recent, settings.style()))
             startedAt = System.currentTimeMillis()
             conv = if (provider == Provider.GEMINI) {
                 LiveSession(app, key, scope, ::onEvent, ::onClosed).also {
@@ -117,21 +146,22 @@ object Engine {
             } else {
                 // The text AI answers each spoken turn, with the conversation so far.
                 val turns = recent.map { Turn(it.first, it.second) }.toMutableList()
-                val textSystem = Prompts.system(c, settings.intensity(c.id), settings.team, settings.style())
+                val textSystem = withMemory(c, Prompts.system(c, settings.intensity(c.id), settings.team, settings.style()))
                 PhoneVoice(app, Lang.tag, g, settings.voiceIndex(c.id), answer = { said0 ->
                     if (Safety.check(said0) != SafetyHit.NONE) { safetyStop(); null }
                     else {
                         turns += Turn(true, said0)
-                        settings.used(provider, text = 1)
-                        when (val r = Ai.reply(provider, key, textSystem, turns)) {
+                        val a = Fallback.reply(settings, keys, textSystem, turns)
+                        notice.value = Fallback.notice(a)
+                        when (val r = a.result) {
                             is AiResult.Ok -> {
                                 if (r.text.startsWith(Prompts.PAUSE)) { safetyStop(); null }
-                                else { turns += Turn(false, r.text); r.text }
+                                else { turns += Turn(false, r.text); rememberLater(c, turns); r.text }
                             }
-                            is AiResult.Fail -> { fail(ChatViewModel.message(r.reason, provider)); stopAll(); null }
+                            is AiResult.Fail -> { fail(ChatViewModel.message(r.reason, a.provider)); stopAll(); null }
                         }
                     }
-                }, scope = scope, onEvent = ::onEvent, onClosed = ::onClosed).also {
+                }, scope = scope, onEvent = ::onEvent, onClosed = ::onClosed, bargeIn = settings.bargeIn && !settings.pushToTalk).also {
                     it.micMuted = micMuted.value; it.voiceMuted = voiceMuted.value; it.start()
                 }
             }
@@ -244,11 +274,17 @@ object Engine {
         val s = synchronized(said) { said.toString().trim().also { said.setLength(0) } }
         heardLine.value = ""; saidLine.value = ""
         if (h.isEmpty() && s.isEmpty()) return
-        val c = character().id
+        val ch = character()
+        val c = ch.id
         scope.launch {
             val dao = Db.get(app).messages()
             if (h.isNotEmpty()) dao.add(Message(character = c, fromUser = true, text = h))
             if (s.isNotEmpty()) dao.add(Message(character = c, fromUser = false, text = s))
+            Weekly.refreshWidgets(app)
+            // Gemini Live: the memory from the saved turns (the phone voice does it after each reply).
+            if (h.isNotEmpty() && settings.provider == Provider.GEMINI) {
+                rememberLater(ch, dao.forCharacter(c).first().filter { !it.pause }.map { Turn(it.fromUser, it.text) })
+            }
         }
     }
 

@@ -75,6 +75,8 @@ fun ChatScreen(vm: ChatViewModel, onSettings: () -> Unit, onCustom: (Int) -> Uni
     val messages by vm.messages.collectAsState()
     val sending by vm.sending.collectAsState()
     val error by vm.error.collectAsState()
+    val notice by vm.notice.collectAsState()
+    var memoryOpen by remember { mutableStateOf(false) }
     val pause by vm.pause.collectAsState()
     var sheet by remember { mutableStateOf(false) }
     var input by remember { mutableStateOf("") }
@@ -134,14 +136,23 @@ fun ChatScreen(vm: ChatViewModel, onSettings: () -> Unit, onCustom: (Int) -> Uni
             if (sending) item { Text(t("${c.name} γράφει…", "${c.name} is typing…"), color = C.dim, fontSize = 12.sp, modifier = Modifier.padding(start = 6.dp)) }
         }
         error?.let { Text(it, color = C.danger, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 18.dp, vertical = 4.dp)) }
+        notice?.let { Text("↪ $it", color = C.muted, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 18.dp, vertical = 2.dp)) }
         if (messages.isNotEmpty() && !sending) Row(Modifier.padding(start = 14.dp, top = 4.dp)) {
             Text(
                 t("🔥 Ψήσε με", "🔥 Roast me"), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = accent,
                 modifier = Modifier.clip(RoundedCornerShape(50)).border(1.dp, accent.copy(alpha = 0.5f), RoundedCornerShape(50))
                     .clickable(role = Role.Button) { vm.roast() }.padding(horizontal = 12.dp, vertical = 6.dp),
             )
+            if (vm.settings.memory) {
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    t("🧠 Τι θυμάται", "🧠 What it remembers"), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = C.muted,
+                    modifier = Modifier.clip(RoundedCornerShape(50)).border(1.dp, C.line, RoundedCornerShape(50))
+                        .clickable(role = Role.Button) { memoryOpen = true }.padding(horizontal = 12.dp, vertical = 6.dp),
+                )
+            }
             Spacer(Modifier.width(8.dp))
-            Text(t("Κράτα πατημένη μια απάντηση για κάρτα", "Long-press a reply for a card"), color = C.dim, fontSize = 11.5.sp, modifier = Modifier.align(Alignment.CenterVertically))
+            Text(t("Κράτα πατημένη μια απάντηση για κάρτα", "Long-press a reply for a card"), color = C.dim, fontSize = 11.5.sp, modifier = Modifier.align(Alignment.CenterVertically).weight(1f))
         }
         Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             TextField(
@@ -168,6 +179,7 @@ fun ChatScreen(vm: ChatViewModel, onSettings: () -> Unit, onCustom: (Int) -> Uni
         Text(t("Με ποιον θα τα πεις;", "Who do you want to talk to?"), fontWeight = FontWeight.ExtraBold, fontSize = 17.sp, modifier = Modifier.padding(horizontal = 18.dp, vertical = 4.dp))
         CharacterList(vm, Modifier.heightIn(max = 560.dp), onCustom = { sheet = false; onCustom(it) }) { vm.pick(it); sheet = false }
     }
+    if (memoryOpen) MemoryDialog(c, vm.memoryLines(), accent, onForget = { vm.forgetMe(); memoryOpen = false }) { memoryOpen = false }
     if (pause) SafetyDialog { vm.pause.value = false }
     sharing?.let { (line, mine) -> ShareDialog(c, line, mine) { sharing = null } }
 }
@@ -301,4 +313,22 @@ private fun CallRow(label: String, number: String, onClick: () -> Unit) {
         Text(label, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
         Text(number, color = C.ok, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, fontSize = 17.sp)
     }
+}
+
+/** 1.3: what the character remembers from earlier conversations, and «Ξέχνα με». */
+@Composable
+fun MemoryDialog(c: Character, lines: List<String>, accent: Color, onForget: () -> Unit, onClose: () -> Unit) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onClose, containerColor = C.panel,
+        title = { Text(t("Τι θυμάται ${c.name}", "What ${c.name} remembers"), fontWeight = FontWeight.ExtraBold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                if (lines.isEmpty()) Text(t("Τίποτα ακόμα. Θυμάται λίγα πράγματα μετά από μερικά μηνύματα.", "Nothing yet. It remembers a few things after some messages."), color = C.muted, fontSize = 13.5.sp)
+                lines.forEach { Text("• $it", fontSize = 13.5.sp, lineHeight = 19.sp) }
+                Text(t("Μένουν μόνο στο κινητό σου. Δεν κρατάει ονόματα, υγεία ή κάτι προσωπικό.", "They stay on your phone only. No names, health or anything personal."), color = C.dim, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
+            }
+        },
+        confirmButton = { if (lines.isNotEmpty()) androidx.compose.material3.TextButton(onForget) { Text(t("Ξέχνα με", "Forget me"), color = C.danger) } },
+        dismissButton = { androidx.compose.material3.TextButton(onClose) { Text(t("Κλείσιμο", "Close"), color = accent) } },
+    )
 }

@@ -1,4 +1,5 @@
 <resources>
     <string name="vent_now">Vent now</string>
     <string name="notes_name">Notes</string>
+    <string name="week_widget">Week\'s anger meter</string>
 </resources>

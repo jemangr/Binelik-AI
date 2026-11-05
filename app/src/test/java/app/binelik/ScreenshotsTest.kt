@@ -68,7 +68,7 @@ class ScreenshotsTest {
     @Test fun s1_welcome() = shot("1-welcome") { Onboarding(ChatViewModel(app)) {} }
 
     @Test fun s2_key() = shot("2-key") {
-        Column(Modifier.fillMaxSize().background(C.bg).padding(20.dp)) { KeyStep(ChatViewModel(app)) {} }
+        Column(Modifier.fillMaxSize().background(C.bg).padding(20.dp)) { KeyStep(ChatViewModel(app), onSaved = {}) }
     }
 
     @Test fun s3_chat() {

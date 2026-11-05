@@ -9,5 +9,7 @@ class BinelikApp : Application() {
         app.binelik.extras.Crash.install(this)
         Engine.init(this)
         if (Engine.settings.dailyLine) app.binelik.extras.Daily.schedule(this, true)
+        // 1.3: Friday evening, «Πώς πήγε η βδομάδα;» (on by default, off in the settings).
+        app.binelik.extras.Weekly.schedule(this, Engine.settings.fridayNote)
     }
 }

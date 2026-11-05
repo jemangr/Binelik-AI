@@ -184,6 +184,28 @@ class Settings(context: Context) {
         e.putInt("use_t_${provider.name}", t0 + text).putInt("use_l_${provider.name}", l0 + liveSeconds).apply()
     }
 
+    // ---- 1.3 ----
+    /** The characters remember a few things from earlier conversations (only on the phone). */
+    var memory: Boolean
+        get() = p.getBoolean("memory", true)
+        set(v) = p.edit().putBoolean("memory", v).apply()
+    /** When the chosen AI can't answer (limit, load), another one with a key answers. */
+    var fallback: Boolean
+        get() = p.getBoolean("fallback", true)
+        set(v) = p.edit().putBoolean("fallback", v).apply()
+    /** Phone voice: the character stops when the user starts talking over it. */
+    var bargeIn: Boolean
+        get() = p.getBoolean("barge_in", true)
+        set(v) = p.edit().putBoolean("barge_in", v).apply()
+    /** Friday evening: «Πώς πήγε η βδομάδα;» with the week's anger meter. */
+    var fridayNote: Boolean
+        get() = p.getBoolean("friday", true)
+        set(v) = p.edit().putBoolean("friday", v).apply()
+    /** The free try without a key was done (shown once on the key step). */
+    var triedDemo: Boolean
+        get() = p.getBoolean("demo", false)
+        set(v) = p.edit().putBoolean("demo", v).apply()
+
     /** Text size: 1.0, 1.15 or 1.3. */
     var textScale: Float
         get() = p.getFloat("scale", 1f)
