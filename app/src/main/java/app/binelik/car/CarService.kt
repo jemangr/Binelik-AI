@@ -31,6 +31,14 @@ class CarService : CarAppService() {
     override fun createHostValidator(): HostValidator = HostValidator.ALLOW_ALL_HOSTS_VALIDATOR
 
     override fun onCreateSession(): Session = object : Session() {
+        init {
+            // While the car screen is open, the conversation may go on with the phone's app closed.
+            lifecycle.addObserver(object : androidx.lifecycle.DefaultLifecycleObserver {
+                override fun onCreate(owner: androidx.lifecycle.LifecycleOwner) { Engine.inCar = true }
+                override fun onDestroy(owner: androidx.lifecycle.LifecycleOwner) { Engine.inCar = false }
+            })
+        }
+
         override fun onCreateScreen(intent: Intent): Screen {
             Engine.init(application)
             // In the car, the taxi driver by default (Settings → Android Auto).

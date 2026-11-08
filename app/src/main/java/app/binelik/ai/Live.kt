@@ -179,8 +179,9 @@ object Speaker {
     }
 
     fun stop(context: android.content.Context) {
-        if (!on) return
         val am = context.getSystemService(android.media.AudioManager::class.java) ?: return
+        // 8/11: the «call» mode stayed on after closing the app and Spotify could not play: reset it whenever we set it.
+        if (!on && am.mode != android.media.AudioManager.MODE_IN_COMMUNICATION) return
         if (android.os.Build.VERSION.SDK_INT >= 31) runCatching { am.clearCommunicationDevice() }
         else @Suppress("DEPRECATION") { am.isSpeakerphoneOn = false }
         am.mode = android.media.AudioManager.MODE_NORMAL

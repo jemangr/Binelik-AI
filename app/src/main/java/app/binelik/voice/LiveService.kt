@@ -22,6 +22,12 @@ import app.binelik.i18n.t
 class LiveService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
+    /** The app was swiped away from the recent apps: the conversation ends and the microphone and audio are released. */
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        if (!Engine.inCar) { Engine.stop(); stopSelf() }
+        super.onTaskRemoved(rootIntent)
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == ACTION_PAUSE) {
             Engine.stop(); stopSelf(); return START_NOT_STICKY

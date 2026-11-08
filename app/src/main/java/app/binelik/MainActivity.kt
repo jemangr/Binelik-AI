@@ -153,6 +153,11 @@ class MainActivity : FragmentActivity() {
     override fun onStop() {
         super.onStop()
         leftAt = System.currentTimeMillis()
+        // 8/11 (Giannis): after closing the app, Spotify could not play until a force stop, because a voice
+        // conversation was still running (microphone and «call» audio). Now it ends when you leave the app with
+        // the screen on. It goes on only with the screen off (phone in the pocket) or in the car (Android Auto).
+        val screenOn = getSystemService(android.os.PowerManager::class.java)?.isInteractive ?: true
+        if (!isChangingConfigurations && screenOn && !app.binelik.voice.Engine.inCar && app.binelik.voice.Engine.on) app.binelik.voice.Engine.stop()
     }
 
     override fun onResume() { super.onResume(); shake.start(this) }

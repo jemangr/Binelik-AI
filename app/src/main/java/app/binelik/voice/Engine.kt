@@ -113,6 +113,9 @@ object Engine {
     }
 
     val on get() = conv != null
+
+    /** An Android Auto session is open (see CarService): leaving the phone's app does not stop the conversation then. */
+    @Volatile var inCar = false
     fun character(): Character = settings.character()
 
     /** Voice works with either AI: Gemini live, DeepSeek through the phone's voice. */
@@ -183,6 +186,8 @@ object Engine {
         if (startedAt > 0) { settings.used(settings.provider, liveSeconds = ((System.currentTimeMillis() - startedAt) / 1000).toInt()); startedAt = 0 }
         conv?.let { conv = null; it.stop() }
         LiveService.stop(app)
+        // Whatever happened, the phone's audio goes back to normal (other apps, e.g. Spotify, can play again).
+        Speaker.stop(app)
     }
 
     /** After a change of character, intensity or voice: a running conversation goes on with the new one. */
