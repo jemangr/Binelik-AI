@@ -17,6 +17,9 @@
 
     <!-- To open the key page, the browser and the dialer (Android 11+ package visibility). -->
     <queries>
+        <!-- «Οι άλλες εφαρμογές μας» in the settings: open them if they are installed -->
+        <package android:name="gr.wsol.gamenight" />
+        <package android:name="gr.wsol.billablecalls" />
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="https" />

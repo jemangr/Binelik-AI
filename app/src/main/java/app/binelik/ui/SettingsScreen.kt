@@ -311,6 +311,25 @@ fun SettingsScreen(vm: ChatViewModel, onBack: () -> Unit, onKey: () -> Unit, onC
             )
         }
         Panel {
+            Label(t("ΚΟΙΝΟΠΟΙΗΣΗ", "SHARE"))
+            Text(t("Στείλε το Binelik AI σε φίλους που θέλουν να ξεσπάσουν (18+).", "Send Binelik AI to friends who need to let off steam (18+)."), color = C.muted, fontSize = 13.sp)
+            TextButton({ app.binelik.extras.MoreApps.share(context) }) { Text(t("📤 Κοινοποίηση", "📤 Share"), color = accent) }
+        }
+        Panel {
+            Label(t("ΟΙ ΑΛΛΕΣ ΕΦΑΡΜΟΓΕΣ ΜΑΣ", "OUR OTHER APPS"))
+            app.binelik.extras.MoreApps.others.forEach { a ->
+                val has = remember(a.pkg) { app.binelik.extras.MoreApps.installed(context, a.pkg) }
+                Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.Top) {
+                    Text(a.emoji, fontSize = 26.sp, modifier = Modifier.padding(end = 12.dp, top = 2.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(a.name, fontSize = 14.5.sp, fontWeight = FontWeight.SemiBold)
+                        Text(a.desc, color = C.dim, fontSize = 12.sp, lineHeight = 16.sp)
+                        TextButton({ app.binelik.extras.MoreApps.openOrInstall(context, a) }) { Text(if (has) t("Άνοιγμα ↗", "Open ↗") else t("Εγκατάσταση ↗", "Install ↗"), color = accent) }
+                    }
+                }
+            }
+        }
+        Panel {
             Label(t("ΣΧΕΤΙΚΑ", "ABOUT"))
             Text("Binelik AI ${BuildConfig.VERSION_NAME}", fontWeight = FontWeight.Bold)
             Text(t("Δημιουργός: jemangr · Ανοιχτός κώδικας, MIT license", "Made by jemangr · Open source, MIT license"), color = C.muted, fontSize = 13.sp)
