@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Binelik AI</string>
+    <string name="app_name" translatable="false">Binelik AI</string>
     <string name="vent_now">Ξέσπα τώρα</string>
     <string name="notes_name">Σημειώσεις</string>
     <string name="week_widget">Θυμόμετρο εβδομάδας</string>

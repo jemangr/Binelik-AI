@@ -308,6 +308,10 @@ interface MessageDao {
     @Insert
     suspend fun add(m: Message): Long
 
+    /** 1.3.4: a user message that a safety pause answered never goes to the AI again (history, Live, memory). */
+    @Query("UPDATE messages SET pause = 1 WHERE id = :id")
+    suspend fun markPause(id: Long)
+
     @Query("DELETE FROM messages")
     suspend fun deleteAll()
 

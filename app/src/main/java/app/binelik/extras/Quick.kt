@@ -27,6 +27,7 @@ class VentWidget : AppWidgetProvider() {
 }
 
 class VentTile : TileService() {
+    @android.annotation.SuppressLint("StartActivityAndCollapseDeprecated") // the Intent form runs only below Android 14
     override fun onClick() {
         val pi = PendingIntent.getActivity(this, 22, ventNow(this), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         if (Build.VERSION.SDK_INT >= 34) startActivityAndCollapse(pi)

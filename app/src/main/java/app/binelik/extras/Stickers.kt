@@ -73,7 +73,9 @@ object Stickers {
     /** WhatsApp: static stickers exactly 512 × 512 and at most 100 KB. */
     fun webp(bmp: Bitmap, file: File) {
         for (q in listOf(90, 75, 60, 45)) {
-            file.outputStream().use { bmp.compress(Bitmap.CompressFormat.WEBP_LOSSY, q, it) }
+            // 1.3.4 (Lint): WEBP_LOSSY exists from Android 11; on Android 10 the old WEBP (lossy with q < 100)
+            val fmt = if (android.os.Build.VERSION.SDK_INT >= 30) Bitmap.CompressFormat.WEBP_LOSSY else @Suppress("DEPRECATION") Bitmap.CompressFormat.WEBP
+            file.outputStream().use { bmp.compress(fmt, q, it) }
             if (file.length() <= 100 * 1024) return
         }
     }

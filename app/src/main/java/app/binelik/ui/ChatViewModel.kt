@@ -30,6 +30,7 @@ import app.binelik.update.Updates
 import app.binelik.voice.Engine
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -60,6 +61,8 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
 
     /** 1.3: «Ξέχνα με»: the current character forgets what it remembered. */
     fun forgetMe() { Engine.memory.forget(character.value.id) }
+    /** 1.3.4: one line of the memory goes. */
+    fun forgetLine(line: String) { Engine.memory.remove(character.value.id, line) }
     fun memoryLines(): List<String> = Engine.memory.lines(character.value.id)
     val error = MutableStateFlow<String?>(null)
     /** Play build, 🚩 under an AI reply: the reply to report (opens «Αναφορά απάντησης AI»). */
@@ -150,37 +153,46 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
     fun send(text: String) {
         val tx = text.trim()
         if (tx.isEmpty() || sending.value) return
+        // 1.3.4: taken at once (not after the first database call), so a quick double tap sends one message;
+        // the character and its intensity are fixed now, so a change of character meanwhile cannot mix two.
+        sending.value = true
         val c = character.value
+        val level = settings.intensity(c.id)
         error.value = null
         viewModelScope.launch {
-            dao.add(Message(character = c.id, fromUser = true, text = tx))
-            // The phone's own check comes first: nothing goes to the AI when it stops.
-            if (Safety.check(tx) != SafetyHit.NONE) {
-                dao.add(Message(character = c.id, fromUser = false, text = Engine.pauseText(), pause = true))
-                Engine.pause.value = true
-                return@launch
-            }
-            val provider = settings.provider
-            if (!keys.has(provider)) { error.value = t("Δεν υπάρχει κλειδί για το ${provider.label}. Βάλ' το από τις Ρυθμίσεις.", "There is no ${provider.label} key. Add it in the Settings."); return@launch }
-            sending.value = true
-            val turns = messages.value.filter { !it.pause }.map { Turn(it.fromUser, it.text) }
-                .let { if (it.lastOrNull()?.text == tx) it else it + Turn(true, tx) }
-            val system = Engine.withMemory(c, Prompts.system(c, intensity.value, settings.team, settings.style())) + (if (roastNext) "\n\n" + Prompts.roast else "")
-            roastNext = false
-            val a = Fallback.reply(settings, keys, system, turns)
-            Engine.notice.value = Fallback.notice(a)
-            when (val r = a.result) {
-                is AiResult.Ok -> {
-                    val isPause = r.text.startsWith(Prompts.PAUSE)
-                    val found = (r.sources.map { "${it.title.replace('\t', ' ')}\t${it.uri}" } + r.searches.map { "?\t$it" }).joinToString("\n")
-                    dao.add(Message(character = c.id, fromUser = false, text = r.text.removePrefix(Prompts.PAUSE).trim(), pause = isPause, sources = found))
-                    if (isPause) Engine.pause.value = true
-                    else Engine.rememberLater(c, turns + Turn(false, r.text))
-                    app.binelik.extras.Weekly.refreshWidgets(getApplication())
+            try {
+                // The phone's own check comes first: nothing goes to the AI when it stops, now or later
+                // (1.3.4: the message itself is marked too, so the history, Live and the memory leave it out).
+                if (Safety.check(tx) != SafetyHit.NONE) {
+                    dao.add(Message(character = c.id, fromUser = true, text = tx, pause = true))
+                    dao.add(Message(character = c.id, fromUser = false, text = Engine.pauseText(), pause = true))
+                    Engine.pause.value = true
+                    return@launch
                 }
-                is AiResult.Fail -> error.value = message(r.reason, a.provider)
+                val mine = dao.add(Message(character = c.id, fromUser = true, text = tx))
+                val provider = settings.provider
+                if (!keys.has(provider)) { error.value = t("Δεν υπάρχει κλειδί για το ${provider.label}. Βάλ' το από τις Ρυθμίσεις.", "There is no ${provider.label} key. Add it in the Settings."); return@launch }
+                val turns = dao.forCharacter(c.id).first().filter { !it.pause }.map { Turn(it.fromUser, it.text) }
+                    .let { if (it.lastOrNull()?.text == tx) it else it + Turn(true, tx) }
+                val system = Engine.withMemory(c, Prompts.system(c, level, settings.team, settings.style())) + (if (roastNext) "\n\n" + Prompts.roast else "")
+                roastNext = false
+                val a = Fallback.reply(settings, keys, system, turns)
+                Engine.notice.value = Fallback.notice(a)
+                when (val r = a.result) {
+                    is AiResult.Ok -> {
+                        val isPause = r.text.startsWith(Prompts.PAUSE)
+                        val found = (r.sources.map { "${it.title.replace('\t', ' ')}\t${it.uri}" } + r.searches.map { "?\t$it" }).joinToString("\n")
+                        if (isPause) dao.markPause(mine) // the AI paused on it: it is not sent again either
+                        dao.add(Message(character = c.id, fromUser = false, text = r.text.removePrefix(Prompts.PAUSE).trim(), pause = isPause, sources = found))
+                        if (isPause) Engine.pause.value = true
+                        else Engine.rememberLater(c, turns + Turn(false, r.text))
+                        app.binelik.extras.Weekly.refreshWidgets(getApplication())
+                    }
+                    is AiResult.Fail -> error.value = message(r.reason, a.provider)
+                }
+            } finally {
+                sending.value = false
             }
-            sending.value = false
         }
     }
 
@@ -197,7 +209,8 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
         val a = Fallback.reply(settings, keys, system, turns)
         Engine.notice.value = Fallback.notice(a)
         return when (val r = a.result) {
-            is AiResult.Ok -> r.text.removePrefix(Prompts.PAUSE).trim()
+            // 1.3.4: the AI's safety signal pauses here too (fight, emails, the week), as in the chat and the games
+            is AiResult.Ok -> if (r.text.startsWith(Prompts.PAUSE)) { Engine.pause.value = true; null } else r.text.trim()
             is AiResult.Fail -> { error.value = message(r.reason, a.provider); null }
         }
     }

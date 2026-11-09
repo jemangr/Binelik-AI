@@ -16,12 +16,29 @@ class Memory(context: Context) {
 
     fun lines(id: String): List<String> = p.getString("m_$id", null).orEmpty().lines().map { it.trim() }.filter { it.isNotEmpty() }.take(MAX)
 
-    fun save(id: String, lines: List<String>) {
+    // 1.3.4: every «Ξέχνα με» / deleted history moves the generation on, so a memory update that was already on
+    // its way (the AI answers seconds later) cannot write back what was just forgotten.
+    private val gens = java.util.concurrent.ConcurrentHashMap<String, Int>()
+    @Volatile private var genAll = 0
+
+    /** The memory's generation for [id]: taken before asking the AI, given back to [save]. */
+    fun generation(id: String): Long = genAll.toLong() * 1_000_000 + (gens[id] ?: 0)
+
+    /** Saves the lines, unless [gen] is given and the memory was forgotten since: then false and nothing changes. */
+    fun save(id: String, lines: List<String>, gen: Long? = null): Boolean = synchronized(this) {
+        if (gen != null && gen != generation(id)) return false
         p.edit().putString("m_$id", lines.take(MAX).joinToString("\n")).putInt("since_$id", 0).apply()
+        true
     }
 
-    fun forget(id: String) = p.edit().remove("m_$id").remove("since_$id").apply()
-    fun forgetAll() = p.edit().clear().apply()
+    /** 1.3.4: deletes one line («🧠 Τι θυμάται» → ×); also moves the generation on, like «Ξέχνα με». */
+    fun remove(id: String, line: String) = synchronized(this) {
+        gens.merge(id, 1, Int::plus)
+        p.edit().putString("m_$id", lines(id).filter { it != line }.joinToString("\n")).apply()
+    }
+
+    fun forget(id: String) = synchronized(this) { gens.merge(id, 1, Int::plus); p.edit().remove("m_$id").remove("since_$id").apply() }
+    fun forgetAll() = synchronized(this) { genAll++; p.edit().clear().apply() }
 
     /** Counts the user's turns since the last update; true when it's time to update the memory. */
     fun countTurn(id: String): Boolean {

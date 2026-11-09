@@ -83,6 +83,7 @@ object Weekly {
         while (get(Calendar.DAY_OF_WEEK) != Calendar.FRIDAY || timeInMillis <= from.timeInMillis) add(Calendar.DAY_OF_YEAR, 1)
     }
 
+    @android.annotation.SuppressLint("MissingPermission") // canNotify() checks it
     fun notify(context: Context, w: Week) {
         val nm = context.getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(NotificationChannel("weekly", t("Πώς πήγε η βδομάδα;", "How did the week go?"), NotificationManager.IMPORTANCE_DEFAULT))
@@ -92,7 +93,7 @@ object Weekly {
             .setStyle(NotificationCompat.BigTextStyle().bigText(text + "\n" + t("Πες τα όλα πριν το Σαββατοκύριακο.", "Let it all out before the weekend.")))
             .setAutoCancel(true)
             .setContentIntent(PendingIntent.getActivity(context, 32, ventNow(context), PendingIntent.FLAG_IMMUTABLE)).build()
-        runCatching { NotificationManagerCompat.from(context).notify(32, n) }
+        if (canNotify(context)) runCatching { NotificationManagerCompat.from(context).notify(32, n) }
     }
 }
 

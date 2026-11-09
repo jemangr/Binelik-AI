@@ -17,8 +17,8 @@ android {
         applicationId = "app.binelik"
         minSdk = 29
         targetSdk = 36
-        versionCode = 12
-        versionName = "1.3.3"
+        versionCode = 13
+        versionName = "1.3.4"
         // F-Droid builds with -PnoUpdateCheck: F-Droid brings its own updates (signed with its key).
         buildConfigField("boolean", "UPDATE_CHECK", (!project.hasProperty("noUpdateCheck")).toString())
         // The Google Play build (build type "play") is the only one with PLAY = true.
@@ -66,6 +66,12 @@ android {
             it.systemProperty("robolectric.dependency.repo.url", "https://repo.maven.apache.org/maven2")
             it.maxHeapSize = "3g"
         }
+    }
+
+    // 1.3.4: Lint on every CI build; errors fail it (tests are not checked: their view models are built on purpose)
+    lint {
+        abortOnError = true
+        ignoreTestSources = true
     }
 
     buildFeatures {

@@ -51,6 +51,7 @@ object Daily {
         am.setInexactRepeating(AlarmManager.RTC, next.timeInMillis, AlarmManager.INTERVAL_DAY, pi(context))
     }
 
+    @android.annotation.SuppressLint("MissingPermission") // canNotify() checks it
     fun show(context: Context) {
         val nm = context.getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(NotificationChannel("daily", t("Ατάκα της ημέρας", "Line of the day"), NotificationManager.IMPORTANCE_DEFAULT))
@@ -58,7 +59,7 @@ object Daily {
         val n = NotificationCompat.Builder(context, "daily").setSmallIcon(R.drawable.ic_stat).setContentTitle(who).setContentText(what)
             .setStyle(NotificationCompat.BigTextStyle().bigText(what)).setAutoCancel(true)
             .setContentIntent(PendingIntent.getActivity(context, 12, openApp(context), PendingIntent.FLAG_IMMUTABLE)).build()
-        runCatching { NotificationManagerCompat.from(context).notify(12, n) }
+        if (canNotify(context)) runCatching { NotificationManagerCompat.from(context).notify(12, n) }
     }
 }
 
@@ -72,3 +73,8 @@ class DailyReceiver : BroadcastReceiver() {
         }
     }
 }
+
+/** 1.3.4 (Lint): notifications only when Android allows them (Android 13+ asks the user). */
+fun canNotify(context: android.content.Context): Boolean =
+    android.os.Build.VERSION.SDK_INT < 33 ||
+        androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED

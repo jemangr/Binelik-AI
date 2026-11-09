@@ -189,7 +189,7 @@ fun ChatScreen(vm: ChatViewModel, onSettings: () -> Unit, onCustom: (Int) -> Uni
         Text(t("Με ποιον θα τα πεις;", "Who do you want to talk to?"), fontWeight = FontWeight.ExtraBold, fontSize = 17.sp, modifier = Modifier.padding(horizontal = 18.dp, vertical = 4.dp))
         CharacterList(vm, Modifier.heightIn(max = 560.dp), onCustom = { sheet = false; onCustom(it) }) { vm.pick(it); sheet = false }
     }
-    if (memoryOpen) MemoryDialog(c, vm.memoryLines(), accent, onForget = { vm.forgetMe(); memoryOpen = false }) { memoryOpen = false }
+    if (memoryOpen) MemoryDialog(c, vm.memoryLines(), accent, onForget = { vm.forgetMe(); memoryOpen = false }, onRemove = { vm.forgetLine(it) }) { memoryOpen = false }
     if (pause) SafetyDialog { vm.pause.value = false }
     sharing?.let { (line, mine) -> ShareDialog(c, line, mine) { sharing = null } }
 }
@@ -327,15 +327,23 @@ private fun CallRow(label: String, number: String, onClick: () -> Unit) {
 
 /** 1.3: what the character remembers from earlier conversations, and «Ξέχνα με». */
 @Composable
-fun MemoryDialog(c: Character, lines: List<String>, accent: Color, onForget: () -> Unit, onClose: () -> Unit) {
+fun MemoryDialog(c: Character, lines0: List<String>, accent: Color, onForget: () -> Unit, onRemove: (String) -> Unit = {}, onClose: () -> Unit) {
+    // 1.3.4: every line can be deleted on its own (×), «Ξέχνα με» deletes them all
+    var lines by remember(lines0) { mutableStateOf(lines0) }
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onClose, containerColor = C.panel,
         title = { Text(t("Τι θυμάται ${c.name}", "What ${c.name} remembers"), fontWeight = FontWeight.ExtraBold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 if (lines.isEmpty()) Text(t("Τίποτα ακόμα. Θυμάται λίγα πράγματα μετά από μερικά μηνύματα.", "Nothing yet. It remembers a few things after some messages."), color = C.muted, fontSize = 13.5.sp)
-                lines.forEach { Text("• $it", fontSize = 13.5.sp, lineHeight = 19.sp) }
-                Text(t("Μένουν μόνο στο κινητό σου. Δεν κρατάει ονόματα, υγεία ή κάτι προσωπικό.", "They stay on your phone only. No names, health or anything personal."), color = C.dim, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
+                lines.forEach { line ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("• $line", fontSize = 13.5.sp, lineHeight = 19.sp, modifier = Modifier.weight(1f))
+                        val label = t("Σβήσε: $line", "Delete: $line")
+                        androidx.compose.material3.TextButton({ onRemove(line); lines = lines - line }, Modifier.semantics { contentDescription = label }) { Text("×", fontSize = 18.sp, color = C.muted) }
+                    }
+                }
+                Text(t("Μένουν μόνο στο κινητό σου. Ζητάμε από το AI να μην κρατά ονόματα, υγεία ή κάτι προσωπικό, αλλά δεν είναι αλάνθαστο: ό,τι δεν θέλεις, σβήσ' το με το ×.", "They stay on your phone only. We ask the AI not to keep names, health or anything personal, but it is not foolproof: delete anything you don't want with ×."), color = C.dim, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
             }
         },
         confirmButton = { if (lines.isNotEmpty()) androidx.compose.material3.TextButton(onForget) { Text(t("Ξέχνα με", "Forget me"), color = C.danger) } },

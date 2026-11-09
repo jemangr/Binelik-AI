@@ -34,6 +34,7 @@ import app.binelik.i18n.t
 import app.binelik.safety.Safety
 import app.binelik.safety.SafetyHit
 import app.binelik.ui.ChatViewModel
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -104,11 +105,13 @@ object Engine {
      */
     fun rememberLater(c: Character, turns: List<Turn>) {
         if (!settings.memory || !memory.countTurn(c.id)) return
+        val gen = memory.generation(c.id)
         scope.launch {
             val old = memory.lines(c.id)
             val a = Fallback.reply(settings, keys, Memory.updatePrompt(old), Memory.transcript(turns), search = false)
             val r = a.result
-            if (r is AiResult.Ok) memory.save(c.id, Memory.parse(r.text))
+            // 1.3.4: not if the memory was forgotten or switched off while the AI was answering
+            if (r is AiResult.Ok && settings.memory) memory.save(c.id, Memory.parse(r.text), gen)
         }
     }
 
@@ -124,8 +127,11 @@ object Engine {
 
     fun hasMic(c: Context) = ContextCompat.checkSelfPermission(c, android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED
 
+    /** 1.3.4: the start of a session (it reads the history first): Pause/Stop cancels it, a second Play waits for it. */
+    private var starting: kotlinx.coroutines.Job? = null
+
     fun play() {
-        if (conv != null) return
+        if (conv != null || starting?.isActive == true) return
         val provider = settings.provider
         val key = keys.get(provider) ?: run { fail(t("Δεν υπάρχει κλειδί για το ${provider.label}. Βάλ' το από τις Ρυθμίσεις.", "There is no ${provider.label} key. Add it in the Settings.")); return }
         if (!hasMic(app)) { fail(t("Το Live θέλει το μικρόφωνο. Άνοιξε την εφαρμογή στο κινητό και πάτα Play.", "Live needs the microphone. Open the app on the phone and press Play.")); return }
@@ -136,10 +142,12 @@ object Engine {
         talked = true
         if (settings.pushToTalk) micMuted.value = true
         if (settings.sounds) SoundFx.play(c.id)
-        scope.launch {
+        starting = scope.launch {
             val dao = Db.get(app).messages()
             val recent = dao.forCharacter(c.id).first().filter { !it.pause }.map { it.fromUser to it.text }
             val system = withMemory(c, Prompts.live(c, settings.intensity(c.id), settings.team, recent, settings.style()))
+            // Pause or Stop pressed while the history was read: no session starts
+            ensureActive()
             startedAt = System.currentTimeMillis()
             conv = if (provider == Provider.GEMINI) {
                 LiveSession(app, key, scope, ::onEvent, ::onClosed).also {
@@ -183,6 +191,7 @@ object Engine {
     private var startedAt = 0L
 
     private fun stopAll() {
+        starting?.cancel(); starting = null
         if (startedAt > 0) { settings.used(settings.provider, liveSeconds = ((System.currentTimeMillis() - startedAt) / 1000).toInt()); startedAt = 0 }
         conv?.let { conv = null; it.stop() }
         LiveService.stop(app)

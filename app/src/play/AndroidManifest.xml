@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Google Play build: no installing APKs (self-update from GitHub is off in this build). -->
+<!-- Google Play build:
+     - no installing APKs (self-update from GitHub is off in this build);
+     - no Android Auto: Play allows car apps only in its categories (media, messaging, navigation, IoT…),
+       and a venting chat is none of them; the GitHub build keeps it (Android Auto «unknown sources»). -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" tools:node="remove" />
+    <application>
+        <service android:name="app.binelik.car.CarService" tools:node="remove" />
+        <meta-data android:name="com.google.android.gms.car.application" tools:node="remove" />
+        <meta-data android:name="androidx.car.app.minCarApiLevel" tools:node="remove" />
+    </application>
 </manifest>
