@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -132,6 +133,15 @@ fun ChatScreen(vm: ChatViewModel, onSettings: () -> Unit, onCustom: (Int) -> Uni
                     }
                 }
                 if (m.sources.isNotBlank()) Sources(m.sources, accent)
+                // Play build: every AI reply can be reported without leaving the app (Play's AI-generated content policy)
+                if (app.binelik.BuildConfig.PLAY && !m.fromUser && !m.pause) {
+                    val label = t("Αναφορά απάντησης AI", "Report this AI reply")
+                    androidx.compose.material3.TextButton(
+                        { vm.reportAi.value = vm.shown(m.text) },
+                        Modifier.height(32.dp).semantics { contentDescription = label },
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp),
+                    ) { Text("🚩", fontSize = 13.sp, color = C.dim) }
+                }
             }
             if (sending) item { Text(t("${c.name} γράφει…", "${c.name} is typing…"), color = C.dim, fontSize = 12.sp, modifier = Modifier.padding(start = 6.dp)) }
         }

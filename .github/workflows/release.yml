@@ -60,3 +60,19 @@ jobs:
           # Not a pre-release, so that «latest» (the README button and the app's update check) finds it.
           prerelease: false
           make_latest: true
+      # The Google Play bundle (build type "play": no self-update, no «Our other apps», 🚩 under AI replies), same
+      # key and versionCode. Built after the GitHub release, so a problem here never holds the release back.
+      # Downloaded from the run's artifacts and uploaded to Play by hand; the mapping goes to Play Console with it.
+      - name: Play bundle (AAB)
+        id: aab
+        run: |
+          ./gradlew :app:bundlePlay
+          cp app/build/outputs/bundle/play/app-play.aab "BinelikAI-${{ steps.apk.outputs.version }}-play.aab"
+          cp app/build/outputs/mapping/play/mapping.txt "BinelikAI-${{ steps.apk.outputs.version }}-play-mapping.txt"
+      - uses: actions/upload-artifact@v5
+        with:
+          name: BinelikAI-${{ steps.apk.outputs.version }}-play
+          path: |
+            BinelikAI-${{ steps.apk.outputs.version }}-play.aab
+            BinelikAI-${{ steps.apk.outputs.version }}-play-mapping.txt
+          retention-days: 7

@@ -22,6 +22,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -98,12 +99,15 @@ class MainActivity : FragmentActivity() {
                     screen = "custom"
                 }
                 val home = { if (vm.canVoice()) "live" else "chat" }
+                val toReport by vm.reportAi.collectAsState()
+                if (toReport != null && screen != "reportai") screen = "reportai"
                 if (shaken) {
                     shaken = false
                     if (vm.settings.shakeReport && screen !in setOf("start", "plates", "report")) screen = "report"
                 }
                 val back = when (screen) {
                     "key", "privacy", "report" -> "settings"
+                    "reportai" -> "chat"
                     "fight", "email", "stats", "scream", "plates", "burn", "battle", "rehearsal", "breathe", "group", "packs" -> "fun"
                     else -> home()
                 }
@@ -116,6 +120,7 @@ class MainActivity : FragmentActivity() {
                     "live" -> LiveScreen(vm, { screen = "chat" }, { screen = "settings" }, { slot = it; screen = "custom" }, { screen = "fun" }, autoPlay, onCalm = { screen = "calm" }).also { autoPlay = false }
                     "privacy" -> PrivacyScreen { screen = "settings" }
                     "report" -> ReportScreen(vm) { screen = "settings" }
+                    "reportai" -> ReportScreen(vm, ai = toReport) { vm.reportAi.value = null; screen = "chat" }
                     "fun" -> FunScreen(vm, { screen = home() }) { screen = if (it == "home") home() else it }
                     "fight" -> FightScreen(vm) { screen = "fun" }
                     "email" -> EmailScreen(vm) { screen = "fun" }

@@ -21,6 +21,8 @@ android {
         versionName = "1.3.3"
         // F-Droid builds with -PnoUpdateCheck: F-Droid brings its own updates (signed with its key).
         buildConfigField("boolean", "UPDATE_CHECK", (!project.hasProperty("noUpdateCheck")).toString())
+        // The Google Play build (build type "play") is the only one with PLAY = true.
+        buildConfigField("boolean", "PLAY", "false")
     }
 
     // The release key comes from keystore.properties (git-ignored, written by CI from the repository's
@@ -41,6 +43,15 @@ android {
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
+        }
+        // Google Play (bundlePlay → AAB): the same R8 release build without what Play forbids: no self-update
+        // from GitHub (no update check, no REQUEST_INSTALL_PACKAGES: src/play/AndroidManifest.xml), no «Our other
+        // apps» with APK downloads, the Play link to share, and 🚩 under every AI reply.
+        create("play") {
+            initWith(getByName("release"))
+            buildConfigField("boolean", "PLAY", "true")
+            buildConfigField("boolean", "UPDATE_CHECK", "false")
+            matchingFallbacks += listOf("release")
         }
     }
 

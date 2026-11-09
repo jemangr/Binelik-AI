@@ -28,7 +28,7 @@ import kotlinx.coroutines.launch
 
 /** «Αναφορά προβλήματος»: write what happened; copy or share the text (with the version, the phone and the last errors). */
 @Composable
-fun ReportScreen(vm: ChatViewModel, onBack: () -> Unit) {
+fun ReportScreen(vm: ChatViewModel, ai: String? = null, onBack: () -> Unit) {
     val context = LocalContext.current
     val clip = LocalClipboardManager.current
     var what by remember { mutableStateOf("") }
@@ -39,10 +39,14 @@ fun ReportScreen(vm: ChatViewModel, onBack: () -> Unit) {
     /** null: not sent yet · true: arrived · false: failed. */
     var sent by remember { mutableStateOf<Boolean?>(null) }
     val scope = androidx.compose.runtime.rememberCoroutineScope()
-    val report = Report.text(context, vm.settings, what)
-    Screen(t("Αναφορά προβλήματος", "Report a problem"), onBack) {
+    // Play build, 🚩: the reported AI reply goes with the report (only that one reply, shown below before sending)
+    val report = if (ai == null) Report.text(context, vm.settings, what)
+        else Report.text(context, vm.settings, "[AI reply report] " + what) + "\n\nAI reply:\n" + ai.take(2000)
+    Screen(if (ai == null) t("Αναφορά προβλήματος", "Report a problem") else t("Αναφορά απάντησης AI", "Report an AI reply"), onBack) {
         Panel {
-            Text(t("Γράψε τι έκανες και τι έγινε. Η εφαρμογή προσθέτει την έκδοση, το κινητό και τα τελευταία σφάλματα, ποτέ τα κλειδιά ή τις κουβέντες σου.",
+            if (ai != null) Text(t("Βρήκες την απάντηση προσβλητική, επικίνδυνη ή ακατάλληλη; Γράψε τι δεν ήταν σωστό (προαιρετικό). Στέλνεται μόνο αυτή η απάντηση, η έκδοση και το κινητό, ποτέ τα κλειδιά ή η υπόλοιπη κουβέντα.",
+                "Found the reply offensive, dangerous or inappropriate? Write what was wrong (optional). Only this reply, the version and the phone are sent, never your keys or the rest of the conversation."), color = C.muted, fontSize = 13.5.sp)
+            else Text(t("Γράψε τι έκανες και τι έγινε. Η εφαρμογή προσθέτει την έκδοση, το κινητό και τα τελευταία σφάλματα, ποτέ τα κλειδιά ή τις κουβέντες σου.",
                 "Write what you did and what happened. The app adds the version, the phone and the last errors, never your keys or conversations."), color = C.muted, fontSize = 13.5.sp)
             OutlinedTextField(what, { what = it.take(2000); copied = false }, Modifier.fillMaxWidth().padding(top = 10.dp).heightIn(min = 120.dp),
                 label = { Text(t("Τι έγινε;", "What happened?")) }, placeholder = { Text(t("Π.χ. πάτησα OK στο θυμόμετρο και έκλεισε", "E.g. I pressed OK on the anger meter and it closed")) })
@@ -53,7 +57,7 @@ fun ReportScreen(vm: ChatViewModel, onBack: () -> Unit) {
             PrimaryButton(if (sending) t("Στέλνω…", "Sending…") else t("📤 Αποστολή", "📤 Send"), {
                 sending = true
                 scope.launch { sent = Report.send(report, email); sending = false }
-            }, Modifier.fillMaxWidth().padding(top = 10.dp), enabled = !sending && what.isNotBlank())
+            }, Modifier.fillMaxWidth().padding(top = 10.dp), enabled = !sending && (ai != null || what.isNotBlank()))
             when (sent) {
                 true -> Text(t("Στάλθηκε. Ευχαριστώ!", "Sent. Thank you!"), color = C.amber, fontSize = 13.sp, modifier = Modifier.padding(top = 6.dp))
                 false -> Text(t("Δεν στάλθηκε (internet;). Δοκίμασε ξανά ή στείλ' το με την εφαρμογή email.", "Not sent (internet?). Try again or send it with your email app."), color = C.danger, fontSize = 12.5.sp, modifier = Modifier.padding(top = 6.dp))

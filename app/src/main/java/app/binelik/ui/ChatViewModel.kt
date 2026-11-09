@@ -62,6 +62,8 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
     fun forgetMe() { Engine.memory.forget(character.value.id) }
     fun memoryLines(): List<String> = Engine.memory.lines(character.value.id)
     val error = MutableStateFlow<String?>(null)
+    /** Play build, 🚩 under an AI reply: the reply to report (opens «Αναφορά απάντησης AI»). */
+    val reportAi = MutableStateFlow<String?>(null)
     /** Shown over everything when the character steps out of its role for safety. */
     val pause get() = Engine.pause
 

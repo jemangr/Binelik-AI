@@ -12,6 +12,7 @@ import app.binelik.i18n.t
  */
 object MoreApps {
     const val SELF = "app.binelik"
+    const val PLAY_PAGE = "https://play.google.com/store/apps/details?id=$SELF"
 
     class App(val pkg: String, val emoji: String, val name: String, val descEl: String, val descEn: String, val page: String, val apk: String, val adult: Boolean = false) {
         val desc get() = t(descEl, descEn)
@@ -46,7 +47,8 @@ object MoreApps {
 
     fun share(c: Context) {
         val me = self
-        val text = t("${me.name}: ${me.descEl}\nΔωρεάν για Android: ${me.page}", "${me.name}: ${me.descEn}\nFree for Android: ${me.page}")
+        val page = if (app.binelik.BuildConfig.PLAY) PLAY_PAGE else me.page
+        val text = t("${me.name}: ${me.descEl}\nΔωρεάν για Android: $page", "${me.name}: ${me.descEn}\nFree for Android: $page")
         val i = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_SUBJECT, me.name).putExtra(Intent.EXTRA_TEXT, text)
         runCatching { c.startActivity(Intent.createChooser(i, null).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
     }

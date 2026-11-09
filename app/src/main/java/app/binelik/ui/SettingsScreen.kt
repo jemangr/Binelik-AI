@@ -292,7 +292,7 @@ fun SettingsScreen(vm: ChatViewModel, onBack: () -> Unit, onKey: () -> Unit, onC
                 dismissButton = { TextButton({ reset = false }) { Text(t("Άκυρο", "Cancel"), color = C.muted) } },
             )
         }
-        Panel {
+        if (BuildConfig.UPDATE_CHECK) Panel {
             Label(t("ΝΕΑ ΕΚΔΟΣΗ", "NEW VERSION"))
             var on by remember { mutableStateOf(vm.settings.checkUpdates) }
             val checking by vm.checking.collectAsState()
@@ -315,7 +315,8 @@ fun SettingsScreen(vm: ChatViewModel, onBack: () -> Unit, onKey: () -> Unit, onC
             Text(t("Στείλε το Binelik AI σε φίλους που θέλουν να ξεσπάσουν (18+).", "Send Binelik AI to friends who need to let off steam (18+)."), color = C.muted, fontSize = 13.sp)
             TextButton({ app.binelik.extras.MoreApps.share(context) }) { Text(t("📤 Κοινοποίηση", "📤 Share"), color = accent) }
         }
-        Panel {
+        // Play build: no APK downloads of other apps from inside a Play app.
+        if (!BuildConfig.PLAY) Panel {
             Label(t("ΟΙ ΑΛΛΕΣ ΕΦΑΡΜΟΓΕΣ ΜΑΣ", "OUR OTHER APPS"))
             app.binelik.extras.MoreApps.others.forEach { a ->
                 val has = remember(a.pkg) { app.binelik.extras.MoreApps.installed(context, a.pkg) }
