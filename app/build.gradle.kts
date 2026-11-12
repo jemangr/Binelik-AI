@@ -17,8 +17,8 @@ android {
         applicationId = "app.binelik"
         minSdk = 29
         targetSdk = 36
-        versionCode = 13
-        versionName = "1.3.4"
+        versionCode = 14
+        versionName = "1.3.5"
         // F-Droid builds with -PnoUpdateCheck: F-Droid brings its own updates (signed with its key).
         buildConfigField("boolean", "UPDATE_CHECK", (!project.hasProperty("noUpdateCheck")).toString())
         // The Google Play build (build type "play") is the only one with PLAY = true.

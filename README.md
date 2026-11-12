@@ -179,7 +179,7 @@ Kotlin, Jetpack Compose, Room, OkHttp. Android 10 και μετά.
 
 Για νέο χαρακτήρα ή διόρθωση, άνοιξε issue ή pull request.
 
-**Βρήκες πρόβλημα;** Ρυθμίσεις → 🐞 Αναφορά προβλήματος: γράφεις τι έγινε και στέλνεται με email στο info@3wsol.gr, μαζί με την έκδοση, το κινητό και τα τελευταία σφάλματα (ποτέ κλειδιά ή κουβέντες).
+**Βρήκες πρόβλημα;** Ρυθμίσεις → 🐞 Αναφορά προβλήματος: γράφεις τι έγινε και στέλνεται με email στο support@jemangr.app, μαζί με την έκδοση, το κινητό και τα τελευταία σφάλματα (ποτέ κλειδιά ή κουβέντες).
 
 ---
 
@@ -202,7 +202,7 @@ Kotlin, Jetpack Compose, Room, OkHttp. Android 10 και μετά.
 - **Install:** [download BinelikAI.apk](https://github.com/jemangr/Binelik-AI/releases/latest/download/BinelikAI.apk) on your phone, open it and allow “install unknown apps”.
 - **18+. Not therapy or medical advice.**
 
-**Found a problem?** Settings → 🐞 Report a problem: write what happened and it goes by email to info@3wsol.gr, with the version, the phone and the last errors (never keys or conversations).
+**Found a problem?** Settings → 🐞 Report a problem: write what happened and it goes by email to support@jemangr.app, with the version, the phone and the last errors (never keys or conversations).
 
 ## License
 

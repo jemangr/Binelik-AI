@@ -153,7 +153,7 @@ class StickerProvider : ContentProvider() {
                 "whatsapp_will_not_cache_stickers", "animated_sticker_pack",
             )).apply {
                 addRow(arrayOf<Any>(
-                    Stickers.PACK_ID, "Binelik AI", "Binelik AI", "tray.png", "", "", "info@3wsol.gr",
+                    Stickers.PACK_ID, "Binelik AI", "Binelik AI", "tray.png", "", "", "support@jemangr.app",
                     "https://github.com/jemangr/Binelik-AI", "https://github.com/jemangr/Binelik-AI/blob/main/PRIVACY.md",
                     "https://github.com/jemangr/Binelik-AI/blob/main/LICENSE", Stickers.files(ctx).size.toString(), 0, 0,
                 ))

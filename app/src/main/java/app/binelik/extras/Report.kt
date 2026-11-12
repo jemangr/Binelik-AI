@@ -37,7 +37,7 @@ object Report {
         Crash.last(context)?.let { appendLine(); appendLine("Last crash:"); append(it.take(4000)) }
     }.trim()
 
-    const val EMAIL = "info@3wsol.gr"
+    const val EMAIL = "support@jemangr.app"
     const val SUBJECT = "Bug report Binelik AI"
     /** The report goes straight to us through platebit.app (nothing kept there); the user's email only if they write it. */
     const val ENDPOINT = "https://platebit.app/report.php"

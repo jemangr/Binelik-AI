@@ -1,5 +1,8 @@
 **Binelik AI**: ξέσπα σε έναν AI χαρακτήρα. Δοκιμαστική έκδοση.
 
+### Νέο στην 1.3.5
+- **Αναφορά προβλήματος:** στέλνεται πλέον στο support@jemangr.app (και το «Από το email μου»).
+
 ### Νέο στην 1.3.4: ασφάλεια και ιδιωτικότητα
 - Ένα μήνυμα που σταμάτησε ο έλεγχος ασφαλείας δεν στέλνεται ποτέ ξανά στο AI (ούτε στην επόμενη κουβέντα, ούτε στο Live, ούτε στη μνήμη).
 - Το «Παύση» σταματά και ένα Live που μόλις ξεκινά· ένα δεύτερο Play δεν ανοίγει δεύτερη κουβέντα.
@@ -32,4 +35,4 @@
 
 ---
 
-**Binelik AI**: vent at an AI character. Test build. Install the APK below (allow “unknown sources”), confirm 18+, add a Gemini (free) or DeepSeek key, pick a character and press **Play**. 18+. Not therapy.
+**Binelik AI**: vent at an AI character. Test build. New in 1.3.5: «Report a problem» now goes to support@jemangr.app. Install the APK below (allow “unknown sources”), confirm 18+, add a Gemini (free) or DeepSeek key, pick a character and press **Play**. 18+. Not therapy.
